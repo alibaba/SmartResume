@@ -8,6 +8,7 @@ import sys
 import tempfile
 from pathlib import Path
 from flask import Flask, render_template, request, jsonify
+from werkzeug.utils import secure_filename
 
 # Set environment variables for Hugging Face mirror
 os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
@@ -40,7 +41,8 @@ def analyze_resume_SmartResume():
         return jsonify({'error': 'No selected file'})
 
     allowed_extensions = {'.pdf', '.jpg', '.jpeg', '.png', '.tiff', '.webp', '.docx', '.doc', '.txt'}
-    file_ext = os.path.splitext(file.filename)[1].lower()
+    safe_filename = secure_filename(file.filename)
+    file_ext = os.path.splitext(safe_filename)[1].lower()
     if file_ext not in allowed_extensions:
         return jsonify({'error': f'Unsupported file type: {file_ext}. Supported types: {", ".join(allowed_extensions)}'})
 
@@ -74,7 +76,8 @@ def analyze_resume_SmartResume():
             return jsonify({'error': 'Parsing failed, please try again'})
         
         if "error" in result:
-            return jsonify({'error': result["error"]})
+            print(f"Pipeline error: {result['error']}")
+            return jsonify({'error': 'Resume parsing failed, please check the file format and try again'})
         
         # Check key fields
         if 'basicInfo' in result:
@@ -93,7 +96,7 @@ def analyze_resume_SmartResume():
         
     except Exception as e:
         print(f"Error processing file {file.filename}: {e}")
-        return jsonify({'error': f'Failed to analyze resume: {str(e)}'})
+        return jsonify({'error': 'An internal error occurred while processing the resume'})
     finally:
         if temp_file_path and os.path.exists(temp_file_path):
             try:
