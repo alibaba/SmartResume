@@ -2,7 +2,7 @@ model:
   name: "qwen-turbo"
   api_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
   api_key: ""
-  max_tokens: 4096
+  max_tokens: 8192
   temperature: 0
   top_p: 1.0
   seed: 0
@@ -12,7 +12,7 @@ channels:
     name: "models/Qwen3-0.6B"
     api_url: "http://localhost:8001/v1"
     api_key: "local"
-    max_tokens: 4096
+    max_tokens: 8192
     temperature: 0.1
     top_p: 0.95
     seed: 0
@@ -40,6 +40,7 @@ layout_detection:
 # Direct model configuration (no API or vLLM deployment needed)
 use_direct_models: true
 direct_model_name: "models/Qwen3-0.6B"
+vllm_max_model_len: 32768
 
 # Model download configuration
 model_download:

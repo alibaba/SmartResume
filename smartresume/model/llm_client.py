@@ -127,10 +127,11 @@ class LLMClient:
             if VLLM_AVAILABLE:
                 # vLLM as library: load model in-process, no API server needed
                 gpu_count = getattr(config, 'vllm_gpu_count', 1)
-                max_model_len = getattr(config, 'vllm_max_model_len', 4096)
-                max_tokens_gen = getattr(config.model, 'max_tokens', 1024)
+                max_model_len = getattr(config, 'vllm_max_model_len', 32768)
+                self._max_model_len = max_model_len
+                max_tokens_gen = getattr(config.model, 'max_tokens', 8192)
                 if max_tokens_gen <= 0:
-                    max_tokens_gen = 1024
+                    max_tokens_gen = 8192
                 self._vllm_sampling_params = SamplingParams(
                     temperature=getattr(config.model, 'temperature', 0.1),
                     top_p=getattr(config.model, 'top_p', 1.0),
@@ -146,7 +147,7 @@ class LLMClient:
                     max_model_len=max_model_len,
                     enforce_eager=False,
                     swap_space=4,
-                    max_num_batched_tokens=8192,
+                    max_num_batched_tokens=max_model_len,
                 )
                 self._use_vllm = True
                 print("Direct model loaded with vLLM (in-process library, no API server)")
@@ -369,6 +370,12 @@ class LLMClient:
                     prompt = f"System: {system_prompt}\n\nUser: {user_prompt}\n\nAssistant:"
 
                 if self._use_vllm and self._vllm_llm and self._vllm_sampling_params:
+                    # Truncate prompt if it exceeds max_model_len
+                    max_input_len = self._max_model_len - self._vllm_sampling_params.max_tokens
+                    token_ids = self.direct_tokenizer.encode(prompt)
+                    if len(token_ids) > max_input_len:
+                        token_ids = token_ids[:max_input_len]
+                        prompt = self.direct_tokenizer.decode(token_ids, skip_special_tokens=False)
                     outputs = self._vllm_llm.generate([prompt], self._vllm_sampling_params)
                     response = outputs[0].outputs[0].text
                 else:
@@ -377,7 +384,7 @@ class LLMClient:
                         prompt,
                         return_tensors="pt",
                         truncation=True,
-                        max_length=4096
+                        max_length=self._max_model_len
                     )
 
                     # Move to device
