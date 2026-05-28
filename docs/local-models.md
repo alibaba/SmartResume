@@ -1,57 +1,34 @@
 # Local Model Deployment
 
-SmartResume can run without external APIs in two different ways.
+SmartResume supports local model inference via vLLM (in-process) or Transformers, with no separate API server required.
 
-## Option 1: OpenAI-compatible vLLM server
+## Quick Setup
 
-1. Install vLLM and download the resume model:
+1. Install dependencies and download the resume model:
    ```bash
-   pip install vllm
+   pip install "SmartResume[local]"
    python scripts/download_models.py
    ```
-2. Launch the server (port 8001 is used by default in the config):
-   ```bash
-   python -m vllm.entrypoints.openai.api_server \
-     --model ./models/Qwen3-0.6B \
-     --port 8001 \
-     --host 0.0.0.0 \
-     --tensor-parallel-size 1
-   ```
-3. Update `configs/config.yaml` so that the extraction channels point to the local endpoint:
-   ```yaml
-   channels:
-     local_qwen:
-       name: "models/Qwen3-0.6B"
-       api_url: "http://localhost:8001/v1"
-       api_key: "local"
 
-   extract_channels:
-     basic_info: "local_qwen"
-     work_experience: "local_qwen"
-     education: "local_qwen"
+2. Enable direct model loading in `configs/config.yaml`:
+   ```yaml
+   use_direct_models: true
+   direct_model_name: "models/Qwen3-0.6B"
    ```
-4. Run the parser as usual:
+
+3. Run the parser as usual:
    ```bash
    python scripts/start.py --file resume.pdf
    ```
 
-## Option 2: Direct model loading (offline)
-
-If you prefer to load the Transformers model directly, enable the direct mode in the same config:
-
-```yaml
-use_direct_models: true
-direct_model_name: "models/Qwen3-0.6B"
-```
-
-When `use_direct_models` is true, SmartResume first attempts to load the model from disk and falls back to the configured channels or remote API if necessary.
+When `use_direct_models` is true, SmartResume loads the model in-process using vLLM (preferred) or Transformers as a fallback. No separate vLLM API server is needed.
 
 ## Python API example
 
 ```python
 from smartresume import ResumeAnalyzer
 
-analyzer = ResumeAnalyzer(init_ocr=True, init_llm=True, config_path="configs/config.yaml")
+analyzer = ResumeAnalyzer(init_ocr=True, init_llm=True)
 result = analyzer.pipeline(
     cv_path="resume.pdf",
     resume_id="resume_001",
@@ -59,4 +36,20 @@ result = analyzer.pipeline(
 )
 ```
 
-No extra arguments are required—the behavior is entirely driven by the YAML configuration.
+The behavior is driven by the YAML configuration — no extra arguments are required.
+
+## Hardware Requirements
+
+| Component | Minimum | Recommended |
+|-----------|---------|-------------|
+| **GPU** | NVIDIA GTX 1060 (6GB) | RTX 3080+ (10GB+) |
+| **RAM** | 16GB | 32GB+ |
+| **Storage** | 20GB free | 50GB+ SSD |
+
+Software: Python 3.9+, CUDA 11.8+ (for GPU inference).
+
+## Troubleshooting
+
+1. **Out of memory**: Lower `vllm_gpu_memory_utilization` in config or use quantization.
+2. **Model load failure**: Check that `direct_model_name` points to a valid directory; delete cache and re-download if needed.
+3. **Slow inference**: Lower `max_tokens` or temperature in config.

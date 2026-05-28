@@ -1,74 +1,65 @@
 """
 OCR provider manager
-Select OCR implementations based on configuration
+Select OCR implementations based on configuration.
+Uses RapidOCR (Apache-2.0) by default.
 """
 import numpy as np
 from typing import List, Any, Optional
 
 
 class OCRProviderManager:
-    """OCR provider manager"""
+    """OCR provider manager (RapidOCR)."""
 
     def __init__(self) -> None:
-        self._easy_ocr: Optional[Any] = None
+        self._engine: Optional[Any] = None
 
     def get_ocr_provider(self) -> Any:
-        """Get OCR provider based on configuration"""
-        return self._get_easy_ocr_provider()
+        """Get OCR provider based on configuration."""
+        return self._get_rapid_ocr_provider()
 
-    def _get_easy_ocr_provider(self) -> Any:
-        """Get EasyOCR provider"""
-        if self._easy_ocr is None:
+    def _get_rapid_ocr_provider(self) -> Any:
+        """Get RapidOCR engine."""
+        if self._engine is None:
             try:
-                import easyocr
-                # Initialize EasyOCR with Chinese and English support
-                self._easy_ocr = easyocr.Reader(['ch_sim', 'en'], gpu=True)
+                from rapidocr_onnxruntime import RapidOCR
+                self._engine = RapidOCR()
             except Exception:
                 raise
-        return self._easy_ocr
+        return self._engine
 
     def ocr_extract(self, image: np.ndarray) -> List[Any]:
         """
         Perform OCR on image.
 
         Args:
-            image: Image array
+            image: Image array (BGR or RGB, numpy ndarray)
 
         Returns:
-            List: OCR results
+            List: [[[bbox], [text, confidence]], ...]
         """
-        return self._ocr_with_easy_ocr(image)
+        return self._ocr_with_rapid_ocr(image)
 
-    def _ocr_with_easy_ocr(self, image: np.ndarray) -> List[Any]:
-        """Run OCR using EasyOCR"""
+    def _ocr_with_rapid_ocr(self, image: np.ndarray) -> List[Any]:
+        """Run OCR using RapidOCR."""
         try:
-            easy_ocr = self._get_easy_ocr_provider()
-
-            # EasyOCR expects RGB images, convert if needed
-            if len(image.shape) == 3 and image.shape[2] == 3:
-                # Already RGB
-                result = easy_ocr.readtext(image)
-            else:
-                # Convert to RGB if needed
-                if len(image.shape) == 2:
-                    # Grayscale to RGB
-                    image_rgb = np.stack([image] * 3, axis=-1)
-                else:
-                    image_rgb = image
-                result = easy_ocr.readtext(image_rgb)
-
-            if not result:
+            engine = self._get_rapid_ocr_provider()
+            # RapidOCR accepts path, bytes, or ndarray (BGR)
+            result, _ = engine(image)
+            if result is None or not result:
                 return []
 
             formatted_result = []
             for item in result:
-                # EasyOCR format: (bbox, text, confidence)
-                bbox, text, confidence = item
+                # RapidOCR item: [box, text, score]; box is list of 4 points [[x,y],...]
+                box = item[0]
+                text = item[1] if len(item) > 1 else ""
+                score = float(item[2]) if len(item) > 2 else 0.0
+                if isinstance(box, np.ndarray):
+                    box = box.tolist()
                 formatted_result.append([
-                    [bbox],
-                    [text, confidence]
+                    [box],
+                    [text, score]
                 ])
-
             return formatted_result
 
         except Exception:
@@ -94,24 +85,15 @@ class OCRProviderManager:
             image_data: Image data as bytes
 
         Returns:
-            List: OCR results
+            List: [[[bbox], [text, confidence]], ...]
         """
         try:
             import cv2
-            import numpy as np
-
-            # Convert bytes to numpy array
             nparr = np.frombuffer(image_data, np.uint8)
             image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-
             if image is None:
                 return []
-
-            # Convert BGR to RGB
-            image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-            return self._ocr_with_easy_ocr(image_rgb)
-
+            return self._ocr_with_rapid_ocr(image)
         except Exception:
             return []
 

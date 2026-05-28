@@ -45,10 +45,9 @@ pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
 
 ```yaml
 model:
-  llm:
-    provider: "openai"
-    api_key: "your-api-key-here"
-    model_name: "gpt-3.5-turbo"
+  name: "qwen-turbo"
+  api_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+  api_key: "your-api-key-here"
 ```
 
 或使用环境变量：
@@ -141,10 +140,7 @@ export OPENAI_API_KEY="your-api-key-here"
    ```
 
 2. **使用本地模型**：
-   ```bash
-   # 部署本地模型，避免网络延迟
-   bash scripts/start_vllm.sh
-   ```
+   - 在 `configs/config.yaml` 中设置 `use_direct_models: true` 和 `direct_model_name`，进程内加载 vLLM，无需单独部署服务。
 
 3. **并行处理**：
    ```bash
@@ -211,7 +207,8 @@ python scripts/download_models.py --force
 
 4. **查看日志**：
    ```bash
-   tail -f logs/vllm_server.log
+   # 检查程序输出的错误信息
+   python scripts/start.py --file resume.pdf 2>&1 | tail -20
    ```
 
 ## 输出问题
@@ -249,19 +246,18 @@ from smartresume import ResumeAnalyzer
 analyzer = ResumeAnalyzer()
 
 # 自定义提取类型
-custom_types = ["basic_info", "work_experience", "skills"]
+custom_types = ["basic_info", "work_experience", "education"]
 
 result = analyzer.pipeline(
     cv_path="resume.pdf",
     extract_types=custom_types,
-    custom_format=True
 )
 
 # 自定义输出格式
 output = {
-    "candidate_name": result["basic_info"]["name"],
-    "experience": result["work_experience"],
-    "skills": result["skills"]
+    "candidate_name": result.get("basicInfo", {}).get("name", ""),
+    "experience": result.get("workExperience", []),
+    "education": result.get("education", [])
 }
 ```
 

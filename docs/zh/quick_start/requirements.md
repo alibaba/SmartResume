@@ -58,23 +58,27 @@ SmartResume 依赖以下主要库：
 
 ### 核心依赖
 
-- `torch`: >= 1.12.0
-- `torchvision`: >= 0.13.0
-- `transformers`: >= 4.20.0
-- `paddlepaddle`: >= 2.4.0
-- `easyocr`: >= 1.7.0
+- `numpy`: >= 1.23
+- `pillow`: >= 9.5
+- `opencv-python`: >= 4.7
+- `pdfplumber`: >= 0.10.0
+- `rapidocr-onnxruntime`: >= 1.3.0
+- `tiktoken`: >= 0.5.1
+- `openai`: >= 1.30.0
 
 ### 文档处理
 
-- `PDFplumber`: >= 0.10.0
-- `Pillow`: >= 9.0.0
-- `opencv-python`: >= 4.6.0
+- `beautifulsoup4`: >= 4.12
+- `python-docx`: >= 0.8
+- `lxml`: >= 4.9
 
 ### 其他工具
 
-- `numpy`: >= 1.21.0
-- `pandas`: >= 1.4.0
-- `requests`: >= 2.28.0
+- `click`: >= 8.0
+- `loguru`: >= 0.6
+- `requests`: >= 2.25.0
+- `pyyaml`: >= 6.0
+- `json-repair`: >= 0.16.0
 
 ## 云服务要求
 

@@ -89,7 +89,7 @@ print(result)
 ## 致谢
 
 - [PDFplumber](https://github.com/jsvine/pdfplumber)
-- [EasyOCR](https://github.com/JaidedAI/EasyOCR)
+- [RapidOCR](https://github.com/RapidAI/RapidOCR)
 
 ## 引用
 

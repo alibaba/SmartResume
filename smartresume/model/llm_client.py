@@ -12,7 +12,13 @@ from smartresume.utils.prompts import get_prompts
 import random
 import json_repair
 
-# Direct model imports
+# Direct model: use vLLM as in-process library (no API server to start)
+try:
+    from vllm import LLM, SamplingParams
+    VLLM_AVAILABLE = True
+except ImportError:
+    VLLM_AVAILABLE = False
+
 try:
     from transformers import AutoTokenizer, AutoModelForCausalLM
     import torch
@@ -39,6 +45,9 @@ class LLMClient:
         self.use_direct_models = getattr(config, 'use_direct_models', False)
         self.direct_model = None
         self.direct_tokenizer = None
+        self._vllm_llm = None
+        self._vllm_sampling_params = None
+        self._use_vllm = False
         self._init_direct_model()
 
     def _init_channel_clients(self) -> None:
@@ -61,8 +70,10 @@ class LLMClient:
                     pass
 
     def _init_direct_model(self) -> None:
-        """Initialize direct model loading"""
-        if not self.use_direct_models or not TRANSFORMERS_AVAILABLE:
+        """Initialize direct model loading. Prefer vLLM (LLM, SamplingParams), fallback to transformers."""
+        if not self.use_direct_models:
+            return
+        if not (VLLM_AVAILABLE or TRANSFORMERS_AVAILABLE):
             return
 
         try:
@@ -71,53 +82,78 @@ class LLMClient:
                 print("Warning: use_direct_models is True but direct_model_name is not configured")
                 return
 
-            # Try to find model in local models directory first
             local_model_path = None
             models_dir = getattr(config, 'model_download', {}).get('models_dir', {}).get('llm', 'models')
 
-            # Check if it's already a local path
             if os.path.exists(direct_model_name):
                 local_model_path = direct_model_name
             else:
-                # Try to find in models directory
                 possible_paths = [
                     os.path.join(models_dir, direct_model_name),
                     os.path.join(models_dir, os.path.basename(direct_model_name)),
                     os.path.join('models', direct_model_name),
                     os.path.join('models', os.path.basename(direct_model_name))
                 ]
-
                 for path in possible_paths:
                     if os.path.exists(path):
                         local_model_path = path
                         break
 
-            # If local model not found, try to download it
             if not local_model_path:
                 print(f"Local model not found, attempting to download: {direct_model_name}")
                 try:
-                    from ..utils.models_download_utils import download_model
-                    from ..utils.model_paths import ModelType, ModelSource
+                    from smartresume.utils.models_download_utils import download_model
+                    from smartresume.utils.model_paths import ModelType, ModelSource
                     download_model(ModelType.LLM, ModelSource.MODELSCOPE, models_dir)
-                    # Try to find the downloaded model
                     for path in possible_paths:
                         if os.path.exists(path):
                             local_model_path = path
                             break
                 except Exception as download_error:
                     print(f"Failed to download model: {download_error}")
-                    # Fall back to using the original model name (might be from HuggingFace)
                     local_model_path = direct_model_name
+
+            if not local_model_path:
+                print("Could not resolve model path after download")
+                return
 
             print(f"Loading direct model from: {local_model_path}")
 
-            # Load tokenizer
             self.direct_tokenizer = AutoTokenizer.from_pretrained(
                 local_model_path,
                 trust_remote_code=True
             )
 
-            # Load model
+            if VLLM_AVAILABLE:
+                # vLLM as library: load model in-process, no API server needed
+                gpu_count = getattr(config, 'vllm_gpu_count', 1)
+                max_model_len = getattr(config, 'vllm_max_model_len', 4096)
+                max_tokens_gen = getattr(config.model, 'max_tokens', 1024)
+                if max_tokens_gen <= 0:
+                    max_tokens_gen = 1024
+                self._vllm_sampling_params = SamplingParams(
+                    temperature=getattr(config.model, 'temperature', 0.1),
+                    top_p=getattr(config.model, 'top_p', 1.0),
+                    max_tokens=max_tokens_gen,
+                    repetition_penalty=1.05,
+                )
+                self._vllm_llm = LLM(
+                    model=local_model_path,
+                    trust_remote_code=True,
+                    tensor_parallel_size=gpu_count,
+                    max_num_seqs=32,
+                    gpu_memory_utilization=getattr(config, 'vllm_gpu_memory_utilization', 0.9),
+                    max_model_len=max_model_len,
+                    enforce_eager=False,
+                    swap_space=4,
+                    max_num_batched_tokens=8192,
+                )
+                self._use_vllm = True
+                print("Direct model loaded with vLLM (in-process library, no API server)")
+                return
+
+            if not TRANSFORMERS_AVAILABLE:
+                return
             device = "cuda" if torch.cuda.is_available() else "cpu"
             self.direct_model = AutoModelForCausalLM.from_pretrained(
                 local_model_path,
@@ -125,16 +161,17 @@ class LLMClient:
                 torch_dtype=torch.float16 if device == "cuda" else torch.float32,
                 device_map="auto" if device == "cuda" else None
             )
-
             if device == "cpu":
                 self.direct_model = self.direct_model.to(device)
-
-            print(f"Direct model loaded successfully on {device}")
+            print(f"Direct model loaded with transformers on {device}")
 
         except Exception as e:
             print(f"Failed to load direct model: {e}")
             self.direct_model = None
             self.direct_tokenizer = None
+            self._vllm_llm = None
+            self._vllm_sampling_params = None
+            self._use_vllm = False
 
     def _get_client(self, extract_type: str, use_backup_channel: bool = False) -> OpenAI:
         """Get the client for a given extraction type"""
@@ -294,7 +331,12 @@ class LLMClient:
         Returns:
             A dictionary with extracted fields
         """
-        if not self.direct_model or not self.direct_tokenizer:
+        if not self.direct_tokenizer or (not self.direct_model and not self._vllm_llm):
+            if self.use_direct_models:
+                raise RuntimeError(
+                    "Direct model (vLLM as library) not available. "
+                    "Do not start vLLM API—fix direct_model_name or install vLLM."
+                )
             print("Direct model not available, falling back to remote API")
             return self._extract_info_remote(
                 text_content=text_content,
@@ -326,34 +368,38 @@ class LLMClient:
                     # Fallback to simple format
                     prompt = f"System: {system_prompt}\n\nUser: {user_prompt}\n\nAssistant:"
 
-                # Tokenize input
-                inputs = self.direct_tokenizer(
-                    prompt,
-                    return_tensors="pt",
-                    truncation=True,
-                    max_length=4096
-                )
-
-                # Move to device
-                device = next(self.direct_model.parameters()).device
-                inputs = {k: v.to(device) for k, v in inputs.items()}
-
-                # Generate response
-                with torch.no_grad():
-                    outputs = self.direct_model.generate(
-                        **inputs,
-                        max_new_tokens=1024,
-                        temperature=0.1,
-                        do_sample=True,
-                        pad_token_id=self.direct_tokenizer.eos_token_id,
-                        eos_token_id=self.direct_tokenizer.eos_token_id
+                if self._use_vllm and self._vllm_llm and self._vllm_sampling_params:
+                    outputs = self._vllm_llm.generate([prompt], self._vllm_sampling_params)
+                    response = outputs[0].outputs[0].text
+                else:
+                    # Tokenize input
+                    inputs = self.direct_tokenizer(
+                        prompt,
+                        return_tensors="pt",
+                        truncation=True,
+                        max_length=4096
                     )
 
-                # Decode response
-                response = self.direct_tokenizer.decode(
-                    outputs[0][inputs['input_ids'].shape[1]:],
-                    skip_special_tokens=True
-                )
+                    # Move to device
+                    device = next(self.direct_model.parameters()).device
+                    inputs = {k: v.to(device) for k, v in inputs.items()}
+
+                    # Generate response
+                    with torch.no_grad():
+                        outputs = self.direct_model.generate(
+                            **inputs,
+                            max_new_tokens=1024,
+                            temperature=0.1,
+                            do_sample=True,
+                            pad_token_id=self.direct_tokenizer.eos_token_id,
+                            eos_token_id=self.direct_tokenizer.eos_token_id
+                        )
+
+                    # Decode response
+                    response = self.direct_tokenizer.decode(
+                        outputs[0][inputs['input_ids'].shape[1]:],
+                        skip_special_tokens=True
+                    )
 
                 # Clean up response
                 response = response.strip()
@@ -409,25 +455,26 @@ class LLMClient:
         """
         Extract structured information using LLM (direct or remote).
 
-        Args:
-            text_content: The input text content.
-            extract_types: List of extraction types to run.
-            resume_id: Resume identifier.
-            use_backup_channel: Whether to use backup channel mapping.
-
-        Returns:
-            A dictionary with extracted fields.
+        When use_direct_models is True, only in-process vLLM/transformers is used;
+        no vLLM API server is required or used.
         """
-        # Check if we should use direct models (highest priority)
-        if self.use_direct_models and self.direct_model and self.direct_tokenizer:
-            return self.extract_info_direct(
-                text_content=text_content,
-                extract_types=extract_types,
-                resume_id=resume_id,
-                use_backup_channel=use_backup_channel
+        # Prefer direct model (vLLM as library or transformers in-process)
+        if self.use_direct_models:
+            if self.direct_tokenizer and (self.direct_model or self._vllm_llm):
+                return self.extract_info_direct(
+                    text_content=text_content,
+                    extract_types=extract_types,
+                    resume_id=resume_id,
+                    use_backup_channel=use_backup_channel
+                )
+            # Direct mode enabled but model not loaded: do not fall back to vLLM API
+            raise RuntimeError(
+                "use_direct_models is True but direct model failed to load. "
+                "Please set direct_model_name in config and ensure vLLM (or transformers) is installed. "
+                "Do not start vLLM API server—vLLM is used as an in-process library only."
             )
 
-        # Fall back to remote API (lowest priority)
+        # Remote API only when use_direct_models is False
         return self._extract_info_remote(
             text_content=text_content,
             extract_types=extract_types,

@@ -90,6 +90,28 @@ result = analyzer.pipeline(
 print(result)
 ```
 
+> **提示**: 命令行每次调用都会重新加载模型，适合单次使用。如需多次调用，推荐以下方式避免重复加载：
+
+#### Web 服务（推荐多次调用）
+
+```bash
+python demo/web_app.py
+# 在浏览器中访问 http://localhost:4999 上传简历
+```
+
+#### 批量处理
+
+```python
+from smartresume import ResumeAnalyzer
+import glob, json
+
+analyzer = ResumeAnalyzer(init_ocr=True, init_llm=True)  # 只加载一次
+
+for f in glob.glob("/path/to/resumes/*.pdf"):
+    result = analyzer.pipeline(cv_path=f, resume_id=f.split("/")[-1])
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+```
+
 ### 本地模型部署
 
 SmartResume 现在支持使用 vLLM 进行本地模型部署，减少对外部 API 的依赖：
@@ -97,12 +119,11 @@ SmartResume 现在支持使用 vLLM 进行本地模型部署，减少对外部 A
 ```bash
 # 下载 Qwen-0.6B-resume 模型
 python scripts/download_models.py
-
-# 部署模型
-bash scripts/start_vllm.sh
 ```
 
-详细的本地模型部署指南请参考 [LOCAL_MODELS](docs/LOCAL_MODELS.md)。
+在 `configs/config.yaml` 中配置 `use_direct_models: true` 和 `direct_model_name`，无需单独启动 vLLM 服务（进程内调用）。
+
+详细的本地模型部署指南请参考 [LOCAL_MODELS](docs/local-models.md)。
 
 
 ## 核心特色
@@ -145,16 +166,10 @@ cp configs/config.yaml.example configs/config.yaml
 
 受限于开源合规性问题，代码是重构版本，内部PDF解析和OCR无法公布，使用的开源版本平替，部分功能未全部兼容。
 
-## TODO List
-
-1. **避免每次加载模型、兼容vllm部署后调用** - 优化模型加载机制，避免重复加载，并兼容vLLM部署后的调用方式
-2. **水印和损坏PDF解析走OCR链路** - 对于有水印或损坏的PDF文件，使用OCR链路进行解析
-3. **更简单的调用方式** - 简化API调用方式，提升易用性
-
 ## Acknowledgments
 
 - [PDFplumber](https://github.com/jsvine/pdfplumber)
-- [EasyOCR](https://github.com/JaidedAI/EasyOCR)
+- [RapidOCR](https://github.com/RapidAI/RapidOCR)
 
 ## Citation
 ```bibtex

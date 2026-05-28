@@ -91,7 +91,7 @@ This project is licensed under [LICENSE](LICENSE).
 ## Acknowledgments
 
 - [PDFplumber](https://github.com/jsvine/pdfplumber)
-- [EasyOCR](https://github.com/JaidedAI/EasyOCR)
+- [RapidOCR](https://github.com/RapidAI/RapidOCR)
 
 ## Citation
 

@@ -2,7 +2,7 @@ from .backend import ResumeAnalyzer, create_analyzer
 from .model import LLMClient
 from .data import DataProcessor, FileProcessor
 from .data import TextExtractor, OCRProviderManager, LayoutDetector
-from .utils import config, get_prompts
+from .utils import config, get_prompts, address_normalizer
 
 __all__ = [
     'ResumeAnalyzer',
@@ -14,7 +14,8 @@ __all__ = [
     'OCRProviderManager',
     'LayoutDetector',
     'config',
-    'get_prompts'
+    'get_prompts',
+    'address_normalizer',
 ]
 
-__version__ = "1.0.0"
+__version__ = "2.0.0"

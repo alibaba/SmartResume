@@ -9,10 +9,11 @@ services:
     volumes:
       - ../configs:/app/configs
       - ../models:/app/models
-      - ..:/app
     ports:
       - "4999:4999"
     environment:
       - PYTHONPATH=/app
       - PYTHONUNBUFFERED=1
+      - SMARTRESUME_CONFIG=/app/configs/config.yaml
     command: python demo/web_app.py
+    restart: unless-stopped

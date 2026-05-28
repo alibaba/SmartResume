@@ -5,7 +5,7 @@ Supports extracting text from PDF, DOC, DOCX, images, etc.
 """
 import numpy as np
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Union, Tuple
 
 try:
     import pdfplumber
@@ -13,6 +13,7 @@ except ImportError:
     pdfplumber = None
 
 from smartresume.data.ocr_provider import ocr_provider_manager
+from smartresume.data.pdf_checker import pdf_checker
 
 
 class TextExtractor:
@@ -123,18 +124,25 @@ class TextExtractor:
 
         return pages_data, images
 
-    def extract_from_pdf_string(self, pdf_path: str) -> str:
+    def extract_from_pdf_string(self, pdf_path: str) -> Union[str, Tuple[str, bool]]:
         """
-        Extract plain text string from PDF.
+        Extract plain text string from PDF and detect if PDF is abnormal.
 
         Args:
             pdf_path: PDF file path
 
         Returns:
-            str: Extracted text
+            str: Extracted text (on exception). Or Tuple[str, bool]: (text, is_abnormal).
+            is_abnormal is True when pdf_checker finds Producer duplication / iText fingerprint.
         """
         if pdfplumber is None:
             raise ImportError("PDFplumber is not installed; cannot process PDF files")
+
+        is_abnormal = False
+        try:
+            is_abnormal, _ = pdf_checker.check_pdf_abnormal(pdf_path)
+        except Exception:
+            pass
 
         try:
             with pdfplumber.open(pdf_path) as pdf:
@@ -150,10 +158,11 @@ class TextExtractor:
                     if text and text.strip():
                         text_parts.append(text.strip())
 
-                return '\n\n'.join(text_parts)
+                text_result = '\n\n'.join(text_parts)
+                return (text_result, is_abnormal)
 
         except Exception:
-            return ""
+            return ("", is_abnormal)
 
     def ocr_extract(self, image: np.ndarray) -> List[Any]:
         """
@@ -177,7 +186,7 @@ class TextExtractor:
 
     def resort_page_text_with_location(self, page_texts: List[Dict[str, Any]], page_num: int) -> List[Dict[str, Any]]:
         """
-        Resort page texts.
+        Resort page texts by bbox position, with line-tolerance fine-tune.
 
         Args:
             page_texts: Page text list
@@ -194,14 +203,23 @@ class TextExtractor:
                 x.get('bbox', [0, 0, 0, 0])[1],
                 x.get('bbox', [0, 0, 0, 0])[0]
             ))
-            return sorted_texts
+            # Fine-tune: if two adjacent boxes have y diff < 10 and next is more left, swap
+            _texts = list(sorted_texts)
+            for i in range(len(_texts) - 1):
+                bbox_i = _texts[i].get('bbox', [0, 0, 0, 0])
+                bbox_next = _texts[i + 1].get('bbox', [0, 0, 0, 0])
+                y_i, y_next = bbox_i[1], bbox_next[1]
+                x_i, x_next = bbox_i[0], bbox_next[0]
+                if abs(y_next - y_i) < 10 and x_next < x_i:
+                    _texts[i], _texts[i + 1] = _texts[i + 1], _texts[i]
+            return _texts
         except Exception:
             return page_texts
 
     def resort_page_text_with_center_location(self, page_texts: List[Dict[str, Any]],
                                               page_num: int) -> List[Dict[str, Any]]:
         """
-        Resort page texts by center coordinates.
+        Resort page texts by center coordinates with line grouping tolerance.
 
         Args:
             page_texts: Page text list
@@ -214,15 +232,40 @@ class TextExtractor:
             return []
 
         try:
-            sorted_texts = sorted(
-                page_texts,
-                key=lambda x: (
-                    (x.get('bbox', [0, 0, 0, 0])[1] +
-                     x.get('bbox', [0, 0, 0, 0])[3]) / 2,
-                    (x.get('bbox', [0, 0, 0, 0])[0] +
-                     x.get('bbox', [0, 0, 0, 0])[2]) / 2
-                )
-            )
+            for text in page_texts:
+                bbox = text.get('bbox', [0, 0, 0, 0])
+                text['_center_y'] = (bbox[1] + bbox[3]) / 2
+                text['_center_x'] = (bbox[0] + bbox[2]) / 2
+                text['_height'] = bbox[3] - bbox[1]
+
+            texts_by_y = sorted(page_texts, key=lambda x: x['_center_y'])
+            lines = []
+            current_line = []
+
+            for text in texts_by_y:
+                if not current_line:
+                    current_line.append(text)
+                else:
+                    avg_height = sum(t['_height'] for t in current_line) / len(current_line)
+                    tolerance = max(avg_height * 0.5, 10)
+                    line_y = current_line[0]['_center_y']
+                    if abs(text['_center_y'] - line_y) <= tolerance:
+                        current_line.append(text)
+                    else:
+                        lines.append(current_line)
+                        current_line = [text]
+            if current_line:
+                lines.append(current_line)
+
+            sorted_texts = []
+            for line in lines:
+                line_sorted = sorted(line, key=lambda x: x['_center_x'])
+                sorted_texts.extend(line_sorted)
+
+            for text in sorted_texts:
+                text.pop('_center_y', None)
+                text.pop('_center_x', None)
+                text.pop('_height', None)
             return sorted_texts
         except Exception:
             return page_texts
@@ -261,6 +304,7 @@ class TextExtractor:
                     text["ly_center"] = ty_center
                     text["layout_idx"] = -1
 
+            # 2. 计算每个布局内文本总面积占比，若小于 7.5%，则取消该布局分配
             for idx, layout in enumerate(layout_location):
                 layout_texts = [text for text in page_texts if text.get("layout_idx") == idx]
                 if not layout_texts:
@@ -281,6 +325,7 @@ class TextExtractor:
                         text["ly_center"] = text["y_center"]
                         text["layout_idx"] = -1
 
+            # 3. 未分配文本块分配到最近的 layout
             active_layouts = []
             for idx, layout in enumerate(layout_location):
                 if any(text.get("layout_idx") == idx for text in page_texts):
@@ -321,6 +366,7 @@ class TextExtractor:
                     text["lx_center"] = closest_center[0]
                     text["ly_center"] = closest_center[1]
 
+            # 4. 按 ly_center, lx_center, y_center, x_center 排序
             sorted_texts = sorted(
                 page_texts,
                 key=lambda x: (
@@ -330,6 +376,25 @@ class TextExtractor:
                     x.get("x_center", 0),
                 )
             )
+
+            # 5. 微调：y 相近的块按从左到右排列（同阅读顺序）
+            swapped = True
+            max_iterations = len(sorted_texts)
+            iteration = 0
+            while swapped and iteration < max_iterations:
+                swapped = False
+                iteration += 1
+                for i in range(len(sorted_texts) - 1):
+                    text_i = sorted_texts[i]
+                    text_next = sorted_texts[i + 1]
+                    y_center_i = text_i.get("y_center", 0)
+                    y_center_next = text_next.get("y_center", 0)
+                    x_center_i = text_i.get("x_center", 0)
+                    x_center_next = text_next.get("x_center", 0)
+                    if abs(y_center_next - y_center_i) < 10 and x_center_next < x_center_i:
+                        sorted_texts[i], sorted_texts[i + 1] = sorted_texts[i + 1], sorted_texts[i]
+                        swapped = True
+
             return sorted_texts
         except Exception:
             return page_texts

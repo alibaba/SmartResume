@@ -34,7 +34,6 @@ from smartresume import ResumeAnalyzer
 analyzer = ResumeAnalyzer(
     init_ocr=True,
     init_llm=True,
-    config_path="configs/config.yaml"
 )
 
 # 解析单个简历
@@ -63,40 +62,13 @@ streamlit run demo/streamlit_app.py
 
 ## 配置说明
 
-### 配置文件结构
-
-```yaml
-# configs/config.yaml
-model:
-  llm:
-    provider: "openai"  # 或 "local"
-    api_key: "your-api-key"
-    model_name: "gpt-3.5-turbo"
-  
-  layout:
-    model_path: "path/to/layout/model"
-    confidence_threshold: 0.5
-
-processing:
-  ocr:
-    provider: "paddle"
-    language: "auto"
-  
-  output:
-    format: "json"  # json, xml, csv
-    include_images: false
-```
+详细的配置选项请参考 [配置说明](configuration.md)。
 
 ### 环境变量
 
 ```bash
-# API 配置
-export OPENAI_API_KEY="your-api-key"
-export OPENAI_BASE_URL="https://api.openai.com/v1"
-
-# 模型路径
-export LAYOUT_MODEL_PATH="/path/to/layout/model"
-export OCR_MODEL_PATH="/path/to/ocr/model"
+# 指定配置文件路径
+export SMARTRESUME_CONFIG="configs/config.yaml"
 ```
 
 ## 支持的文件格式
@@ -126,13 +98,6 @@ SmartResume 支持提取以下字段类型：
 ### 工作经历
 - 公司名称、职位
 - 工作时间、工作内容
-- 项目经验、技能
-
-### 其他信息
-- 技能特长
-- 证书资质
-- 兴趣爱好
-- 自我评价
 
 ## 输出格式
 

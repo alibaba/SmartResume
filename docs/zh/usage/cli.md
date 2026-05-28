@@ -132,8 +132,8 @@ python scripts/start.py --config config.yaml --file resume.pdf
 
 1. **文件格式不支持**
    ```bash
-   ERROR: Unsupported file format: .doc
-   SOLUTION: 使用 --file_types 参数过滤文件类型
+   ERROR: Unsupported file format: .pptx
+   SOLUTION: 使用支持的文件格式（PDF、图片、Word、TXT）
    ```
 
 2. **内存不足**

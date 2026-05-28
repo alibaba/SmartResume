@@ -4,8 +4,10 @@ Data processor
 Responsible for processing and cleaning extracted resume data
 """
 import re
-
-from typing import Dict, Any, List, Tuple
+import os
+import string
+from typing import Dict, Any, List, Optional, Tuple
+from datetime import datetime
 import tiktoken
 import unicodedata
 from smartresume.utils.config import config
@@ -18,6 +20,15 @@ class DataProcessor:
         """Initialize data processor"""
         self.encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")
         self.pattern = r'[a-zA-Z0-9\-~_]{40,}'
+        self.word_chars = set()
+        try:
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            word_path = os.path.join(current_dir, 'word.txt')
+            if os.path.exists(word_path):
+                with open(word_path, 'r', encoding='utf-8') as f:
+                    self.word_chars = set(f.read().strip().split('\n'))
+        except Exception:
+            pass
 
     def should_remove(self, match: re.Match) -> bool:
         """
@@ -32,30 +43,49 @@ class DataProcessor:
         encoded = self.encoding.encode(match.group(0))
         return len(encoded) > len(match.group(0)) * 0.5
 
-    def build_text_content(self, processed_data: List[Dict[str, Any]]) -> Tuple[List[str], str, str]:
+    def _remove_spaces_around_chars(self, text: str) -> str:
+        """Remove spaces around characters listed in word.txt (if loaded)."""
+        if not self.word_chars:
+            return text
+        has_word_chars = any(c in self.word_chars for c in text)
+        if not has_word_chars:
+            return text
+        result = []
+        for char in text:
+            if char in self.word_chars or not char.isspace():
+                result.append(char)
+        return ''.join(result)
+
+    def build_text_content(self, processed_data: List[Dict[str, Any]], resume_id: str = "", use_hybrid_text: bool = False) -> Tuple[List[str], str, str]:
         """
         Build text content from processed data.
 
         Args:
             processed_data: Processed data
+            resume_id: Resume ID (optional, for compatibility)
+            use_hybrid_text: If True, use text_hybrid when present (e.g. for abnormal PDF basicInfo)
 
         Returns:
             Tuple[List[str], str, str]: (lines, plain text, indexed text)
         """
         text_lines = []
+        text_key = 'text_hybrid' if use_hybrid_text else 'text'
 
         for page_data in processed_data:
-            if 'text' in page_data:
-                if isinstance(page_data['text'], list):
-                    for text_item in page_data['text']:
-                        if isinstance(text_item, dict) and 'text' in text_item:
-                            text = self._clean_text_content(text_item['text'])
-                            if text:
-                                text_lines.extend(self._split_text_lines(text))
-                        elif isinstance(text_item, str) and text_item.strip():
-                            text_lines.append(text_item.strip())
-                elif isinstance(page_data['text'], str) and page_data['text'].strip():
-                    text_lines.append(page_data['text'].strip())
+            page_text = page_data.get(text_key) or page_data.get('text')
+            if not page_text:
+                continue
+            if isinstance(page_text, list):
+                for text_item in page_text:
+                    if isinstance(text_item, dict) and 'text' in text_item:
+                        text = self._clean_text_content(text_item['text'])
+                        text = self._remove_spaces_around_chars(text)
+                        if text:
+                            text_lines.extend(self._split_text_lines(text))
+                    elif isinstance(text_item, str) and text_item.strip():
+                        text_lines.append(text_item.strip())
+            elif isinstance(page_text, str) and page_text.strip():
+                text_lines.append(page_text.strip())
 
         text_content = '\n'.join(text_lines)
 
@@ -163,6 +193,10 @@ class DataProcessor:
 
             if 'basicInfo' in raw_data:
                 processed_data['basicInfo'] = self._process_basic_info(raw_data['basicInfo'])
+                processed_data['basicInfo']['workYears'] = self._calculate_work_years(raw_data, text_lines)
+                processed_data['basicInfo']['highestEducation'] = self._extract_highest_education(raw_data)
+                extracted_id = self._extract_id_card_from_text(text_lines)
+                processed_data['basicInfo']['idCard'] = extracted_id
 
             if 'workExperience' in raw_data:
                 processed_data['workExperience'] = self._process_work_experience(raw_data['workExperience'], text_lines)
@@ -193,6 +227,9 @@ class DataProcessor:
         if 'age' in basic_info:
             processed['age'] = self._clean_text(basic_info['age'])
             processed['ageNum'] = self._extract_age_number(basic_info['age'])
+
+        if 'idCard' in basic_info:
+            processed['idCard'] = self._clean_id_card(basic_info['idCard'])
 
         for key, value in basic_info.items():
             if key not in processed:
@@ -246,7 +283,8 @@ class DataProcessor:
                 processed_edu['major'] = self._clean_text(edu['major'])
 
             if 'degreeLevel' in edu:
-                processed_edu['degreeLevel'] = self._clean_text(edu['degreeLevel'])
+                raw_degree = self._clean_text(edu['degreeLevel'])
+                processed_edu['degreeLevel'] = self._map_internal_degree(raw_degree)
 
             if 'period' in edu:
                 processed_edu['period'] = self._process_time_period(edu['period'])
@@ -267,13 +305,15 @@ class DataProcessor:
         """Clean email address"""
         if not email:
             return ""
-
         email = str(email).strip().lower()
-
+        email = email.replace(".c0m", ".com").replace(".c0.cn", ".co.cn")
+        email = email.replace("gmai1.com", "gmail.com").replace("gmai1.cn", "gmail.cn")
+        email = email.replace("hotmai1.com", "hotmail.com")
+        email = email.replace("163.c0m", "163.com").replace("126.c0m", "126.com").replace("qq.c0m", "qq.com")
+        email = email.replace("gq.com", "qq.com")
         email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
         if re.match(email_pattern, email):
             return email
-
         return email
 
     def _clean_company_name(self, company: str) -> str:
@@ -356,6 +396,25 @@ class DataProcessor:
                 pass
 
         return -1.0
+
+    def _clean_id_card(self, id_card: str) -> str:
+        """Clean and validate ID card number (18 digits or 17+X)."""
+        if not id_card:
+            return ""
+        id_card = str(id_card).strip()
+        pattern = r'^[1-9]\d{5}(18|19|20)\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\d{3}[\dXx]$'
+        if re.match(pattern, id_card):
+            return id_card.upper()
+        return ""
+
+    def _extract_id_card_from_text(self, text_lines: List[str]) -> str:
+        """Extract ID card number from text lines."""
+        pattern = r'[1-9]\d{5}(18|19|20)\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\d{3}[\dXx]'
+        full_text = ' '.join(text_lines)
+        match = re.search(pattern, full_text)
+        if match:
+            return self._clean_id_card(match.group(0))
+        return ""
 
     def _extract_description_from_range(self, index_range: List[int], text_lines: List[str], name: str, position: str) -> str:
         """
@@ -466,18 +525,15 @@ class DataProcessor:
         return date_str
 
     def _extract_pages_info(self, processed_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Extract page metadata from processed data"""
+        """Extract page metadata from processed data."""
         pages_info = []
-
         for page_num, page_data in enumerate(processed_data):
             page_info = {
                 'page_number': page_num + 1,
                 'has_text': 'text' in page_data and bool(page_data['text']),
-                'has_image': 'image' in page_data
+                'has_image': 'image' in page_data,
             }
-
             pages_info.append(page_info)
-
         return pages_info
 
     def _normalize_for_comparison(self, text: str) -> str:
@@ -509,16 +565,35 @@ class DataProcessor:
         """
         return unicodedata.normalize('NFKC', text).strip()
 
+    def _normalize_for_basic_info(self, text: str) -> str:
+        """Normalize for basicInfo (name, phone): strip spaces/newlines and punctuation, keep alphanumeric and Chinese."""
+        if not text:
+            return ""
+        normalized = str(text).replace("\n", "").replace("\r", "")
+        normalized = re.sub(r'\s+', '', normalized)
+        chinese_punctuation = '！？｡。＂＃＄％＆＇（）＊＋，－／：；＜＝＞＠［＼］＾＿｀｛｜｝～｟｠｢｣､、〃》「」『』【】〔〕〖〗〘〙〚〛〜〝〞〟〰〾〿–—''‛""„‟…‧﹏·'
+        for punct in string.punctuation + chinese_punctuation:
+            normalized = normalized.replace(punct, '')
+        return ''.join(c for c in normalized if c.isalnum() or '\u4e00' <= c <= '\u9fff')
+
     def _validate_fields_in_text(self, processed_data: Dict[str, Any], text_lines: List[str]) -> None:
         """
         Validate that key fields appear in the original text; remove otherwise.
-
-        Args:
-            processed_data: Processed data
-            text_lines: Original text lines
         """
         full_text = ''.join(text_lines)
         normalized_full_text = self._normalize_for_comparison(full_text)
+        normalized_full_text_basic = self._normalize_for_basic_info(full_text)
+
+        if 'basicInfo' in processed_data:
+            basic_info = processed_data['basicInfo']
+            if basic_info.get('name'):
+                norm_name = self._normalize_for_basic_info(basic_info['name'])
+                if norm_name and norm_name not in normalized_full_text_basic:
+                    basic_info['name'] = ""
+            if basic_info.get('phoneNumber'):
+                norm_phone = self._normalize_for_basic_info(basic_info['phoneNumber'])
+                if norm_phone and norm_phone not in normalized_full_text_basic:
+                    basic_info['phoneNumber'] = ""
 
         if 'workExperience' in processed_data:
             valid_works = []
@@ -549,3 +624,115 @@ class DataProcessor:
                     valid_educations.append(edu)
 
             processed_data['education'] = valid_educations
+
+    def _extract_year_from_date(self, date_str: str) -> Optional[int]:
+        """Extract year from date string (e.g. 2020.1, 2020)."""
+        if not date_str or not str(date_str).strip():
+            return None
+        match = re.search(r'(\d{4})', str(date_str).strip())
+        if match:
+            try:
+                y = int(match.group(1))
+                if 1950 <= y <= 2030:
+                    return y
+            except ValueError:
+                pass
+        return None
+
+    def _calculate_work_years(self, raw_data: Dict[str, Any], text_lines: List[str]) -> int:
+        """Compute work years from earliest work start (non-internship) or latest graduation."""
+        current_year = datetime.now().year
+        earliest_work_year = None
+        if 'workExperience' in raw_data:
+            for work in raw_data['workExperience']:
+                if work.get('internship', 0) == 1:
+                    continue
+                per = work.get('employmentPeriod', {})
+                start = per.get('startDate') if isinstance(per, dict) else None
+                if start and str(start).strip():
+                    y = self._extract_year_from_date(start)
+                    if y is not None and (earliest_work_year is None or y < earliest_work_year):
+                        earliest_work_year = y
+        if earliest_work_year is not None:
+            return current_year - earliest_work_year
+        latest_graduation_year = None
+        if 'education' in raw_data:
+            for edu in raw_data['education']:
+                per = edu.get('period', {})
+                if not isinstance(per, dict):
+                    continue
+                end = per.get('endDate')
+                if end and str(end).strip() and str(end) not in ('至今', 'present', '现在', '目前'):
+                    y = self._extract_year_from_date(end)
+                    if y is not None and (latest_graduation_year is None or y > latest_graduation_year):
+                        latest_graduation_year = y
+        if latest_graduation_year is not None:
+            return current_year - latest_graduation_year
+        return -1
+
+    def _map_internal_degree(self, degree_text: str) -> str:
+        """Map degree text: 专科 -> 大专/中专 by context."""
+        if not degree_text:
+            return ""
+        d = degree_text.lower()
+        if '专科' in d:
+            if '大专' in d:
+                return '大专'
+            if '中专' in d:
+                return '中专'
+            return '大专'
+        return degree_text
+
+    def _standardize_education_level(self, degree_level: str, education_keywords: Dict[str, List[str]]) -> str:
+        """Map degree level to standard key using keyword list."""
+        if not degree_level:
+            return ""
+        dl = degree_level.lower().strip()
+        for standard_level, keywords in education_keywords.items():
+            for kw in keywords:
+                if kw.lower() in dl:
+                    return standard_level
+        return ""
+
+    def _extract_highest_education(self, raw_data: Dict[str, Any]) -> str:
+        """Extract highest education: by latest startDate first, then by degree priority."""
+        if 'education' not in raw_data or not raw_data['education']:
+            return ""
+        educations = raw_data['education']
+        education_priority = {
+            'DOCTOR': 1, 'MASTER': 2, 'BACHELOR': 3, 'ASSOCIATE': 4,
+            'VOCATIONAL_SECONDARY': 5, 'HIGH_SCHOOL': 6, 'JUNIOR_HIGH_SCHOOL': 7, 'PRIMARY_SCHOOL': 8
+        }
+        education_keywords = {
+            'DOCTOR': ['博士', 'phd', 'doctor', '博士研究生'],
+            'MASTER': ['硕士', '研究生', 'master', '硕士研究生'],
+            'BACHELOR': ['本科', 'bachelor', '学士', '本科生'],
+            'ASSOCIATE': ['专科', '大专', 'associate', '专科生'],
+            'VOCATIONAL_SECONDARY': ['中专', '中等专业学校', 'vocational high school', 'secondary vocational school'],
+            'HIGH_SCHOOL': ['高中', 'high', '高级中学', '中学'],
+            'JUNIOR_HIGH_SCHOOL': ['初中', '初级中学'],
+            'PRIMARY_SCHOOL': ['小学', '初等教育']
+        }
+        latest_education = None
+        latest_year = None
+        for edu in educations:
+            per = edu.get('period', {})
+            if isinstance(per, dict) and per.get('startDate'):
+                y = self._extract_year_from_date(per['startDate'])
+                if y is not None and (latest_year is None or y > latest_year):
+                    latest_year = y
+                    latest_education = edu
+        if latest_education:
+            std = self._standardize_education_level(latest_education.get('degreeLevel', ''), education_keywords)
+            if std:
+                return std
+        highest_priority = 999
+        result = ""
+        for edu in educations:
+            std = self._standardize_education_level(edu.get('degreeLevel', ''), education_keywords)
+            if std:
+                p = education_priority.get(std, 999)
+                if p < highest_priority:
+                    highest_priority = p
+                    result = std
+        return result

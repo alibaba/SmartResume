@@ -82,6 +82,28 @@ result = analyzer.pipeline(
 print(result)
 ```
 
+> **Tip**: The CLI reloads models on every call, suitable for one-off use. For repeated parsing, use one of the following to avoid reloading:
+
+#### Web Service (Recommended for repeated use)
+
+```bash
+python demo/web_app.py
+# Open http://localhost:4999 in your browser to upload resumes
+```
+
+#### Batch Processing
+
+```python
+from smartresume import ResumeAnalyzer
+import glob, json
+
+analyzer = ResumeAnalyzer(init_ocr=True, init_llm=True)  # load once
+
+for f in glob.glob("/path/to/resumes/*.pdf"):
+    result = analyzer.pipeline(cv_path=f, resume_id=f.split("/")[-1])
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+```
+
 ### Local Model Deployment
 
 SmartResume now supports local model deployment using vLLM, reducing dependency on external APIs:
@@ -89,10 +111,9 @@ SmartResume now supports local model deployment using vLLM, reducing dependency 
 ```bash
 # Download Qwen-0.6B-resume model
 python scripts/download_models.py
-
-# Deploy model
-bash scripts/start_vllm.sh
 ```
+
+Configure `use_direct_models: true` and `direct_model_name` in `configs/config.yaml`; no separate vLLM server is required (vLLM runs in-process).
 
 For detailed local model deployment guide, see [LOCAL_MODELS](docs/local-models.md).
 
@@ -125,16 +146,10 @@ We plan to explore and replace them with models under more permissive licenses t
 
 Due to open-source compliance requirements, this codebase is a refactored version. The internal PDF parsing and OCR components cannot be published. We have replaced them with open-source alternatives, and some features may not be fully compatible with the original implementation.
 
-## TODO List
-
-1. **Avoid loading models on every call, support vLLM deployment** - Optimize model loading mechanism to avoid repeated loading and support vLLM deployment calls
-2. **Watermarked and corrupted PDF parsing via OCR pipeline** - Use OCR pipeline for parsing watermarked or corrupted PDF files
-3. **Simpler API interface** - Simplify API calls to improve usability
-
 ## Acknowledgments
 
 - [PDFplumber](https://github.com/jsvine/pdfplumber)
-- [EasyOCR](https://github.com/JaidedAI/EasyOCR)
+- [RapidOCR](https://github.com/RapidAI/RapidOCR)
 
 ## Citation
 ```bibtex

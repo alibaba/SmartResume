@@ -30,4 +30,5 @@ class ModelType(Enum):
 class ModelSource(Enum):
     """Model download sources"""
     MODELSCOPE = "modelscope"
+    HUGGINGFACE = "huggingface"
     LOCAL = "local"

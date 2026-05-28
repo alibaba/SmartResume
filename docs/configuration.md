@@ -61,5 +61,5 @@ Config.from_yaml("configs/config.yaml")
 Next steps:
 
 - [Local model deployment](local-models.md)
-- [Command-line usage](zh/usage/cli.md)
-- [Python API guide](zh/usage/api.md)
+- [Command-line usage (Chinese)](zh/usage/cli.md)
+- [Python API guide (Chinese)](zh/usage/api.md)

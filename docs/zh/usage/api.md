@@ -13,7 +13,6 @@ from smartresume import ResumeAnalyzer
 analyzer = ResumeAnalyzer(
     init_ocr=True,
     init_llm=True,
-    config_path="configs/config.yaml"
 )
 
 # 解析简历
@@ -101,34 +100,7 @@ class ResumeAnalyzer:
 
 ### 配置选项
 
-```python
-# 自定义配置
-config = {
-    "model": {
-        "llm": {
-            "provider": "openai",
-            "api_key": "your-api-key",
-            "model_name": "gpt-3.5-turbo"
-        },
-        "layout": {
-            "model_path": "./models/layout_model",
-            "confidence_threshold": 0.5
-        }
-    },
-    "processing": {
-        "ocr": {
-            "provider": "paddle",
-            "language": "auto"
-        },
-        "output": {
-            "format": "json",
-            "include_images": False
-        }
-    }
-}
-
-analyzer = ResumeAnalyzer(config=config)
-```
+配置通过 `configs/config.yaml` 文件管理，详细选项请参考 [配置说明](configuration.md)。
 
 ## 高级用法
 

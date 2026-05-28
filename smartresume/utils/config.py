@@ -259,9 +259,27 @@ class Config:
 # Create global config instance
 config = Config()
 
-# Try to load configuration from file
-try:
-    config = Config.from_yaml("configs/config.yaml")
-except Exception:
-    # Silently fall back to defaults
-    pass
+
+def _find_config_path():
+    """Search for config file in standard locations."""
+    import os
+    candidates = []
+    env_path = os.environ.get('SMARTRESUME_CONFIG')
+    if env_path:
+        candidates.append(env_path)
+    candidates.append(os.path.join(os.getcwd(), "configs", "config.yaml"))
+    candidates.append(os.path.join(os.path.expanduser("~"), ".smartresume", "config.yaml"))
+    package_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    candidates.append(os.path.join(package_dir, "configs", "config.yaml"))
+    for path in candidates:
+        if os.path.exists(path):
+            return path
+    return None
+
+
+_config_path = _find_config_path()
+if _config_path:
+    try:
+        config = Config.from_yaml(_config_path)
+    except Exception:
+        pass

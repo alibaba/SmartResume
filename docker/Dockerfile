@@ -10,10 +10,12 @@ RUN apt-get update && apt-get install -y \
     libxext6 \
     libxrender-dev \
     libgomp1 \
-    libgthread-2.0-0 \
+    libxml2-dev \
+    libxslt1-dev \
     build-essential \
     gcc \
     g++ \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
@@ -22,10 +24,12 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
 
 COPY . .
 
-RUN pip install --no-cache-dir -e .
+RUN pip install --no-cache-dir flask && \
+    pip install --no-cache-dir -e .
 
 ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
+ENV SMARTRESUME_CONFIG=/app/configs/config.yaml
 
 EXPOSE 4999
 
