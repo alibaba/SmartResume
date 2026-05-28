@@ -14,7 +14,7 @@
 ## Project Introduction
 SmartResume is an layout‑aware resume parsing system. It ingests resumes in PDF, image and common Office formats, extracts clean text (OCR + PDF metadata), reconstructs reading order with layout detection, and leverages LLMs to convert content into structured fields such as basic info, education, and work experience.
 
-[demo](https://github.com/user-attachments/assets/5814b880-cdb5-41d8-9534-cf6e6909c136)
+[demo](https://github.com/user-attachments/assets/db06bf23-9700-4a47-87e6-15ca526ad269)
 
 ## Quick Start
 

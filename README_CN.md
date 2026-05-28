@@ -14,7 +14,7 @@
 ## 项目介绍
 SmartResume 是一个面向版面结构的智能简历解析系统，系统支持 PDF、图片及常见 Office 文档格式，融合 OCR 与 PDF 元数据完成文本提取，结合版面检测重建阅读顺序，并通过 LLM 将内容转换为结构化字段（如：基本信息、教育经历、工作经历等）。系统同时支持远程 API 和本地模型部署，提供灵活的使用方式。
 
-[demo](https://github.com/user-attachments/assets/5814b880-cdb5-41d8-9534-cf6e6909c136)
+[demo](https://github.com/user-attachments/assets/db06bf23-9700-4a47-87e6-15ca526ad269)
 
 
 ## 快速开始
