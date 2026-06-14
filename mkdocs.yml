@@ -1,0 +1,101 @@
+site_name: SmartResume
+# site_url: https://your-username.github.io/SmartResume
+repo_name: alibaba/SmartResume
+repo_url: https://github.com/alibaba/SmartResume
+use_directory_urls: true
+
+theme:
+  icon:
+    repo: fontawesome/brands/github
+  name: material
+  palette:
+    # Palette toggle for automatic mode
+    - media: "(prefers-color-scheme)"
+      scheme: default
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to system preference
+  logo: assets/logo.png
+  favicon: assets/logo.png
+  features:
+    - content.tabs.link
+    - content.code.annotate
+    - content.code.copy
+    - navigation.expand
+    - navigation.footer
+    - navigation.tabs
+    - navigation.sections
+    - navigation.path
+    - navigation.indexes
+    - navigation.top
+    - navigation.tracking
+    - search.suggest
+    - toc.follow
+    - toc.integrate
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/alibaba/SmartResume
+      name: GitHub
+
+copyright: © 2024 - 2025 SmartResume. All Rights Reserved.
+
+nav:
+  - "SmartResume": index.md
+  - 主页:
+    - "SmartResume": zh/index.md
+    - 快速开始:
+      - 快速开始: zh/quick_start/index.md
+      - 环境要求: zh/quick_start/requirements.md
+      - 安装指南: zh/quick_start/installation.md
+      - Docker部署: zh/quick_start/docker.md
+    - 使用指南:
+      - 基本使用: zh/usage/index.md
+      - 命令行工具: zh/usage/cli.md
+      - Python API: zh/usage/api.md
+      - 配置说明: zh/usage/configuration.md
+      - 本地模型部署: zh/usage/local_models.md
+    - 参考资料:
+      - 输出格式: zh/reference/output_format.md
+      - 基准测试: zh/reference/benchmark.md
+      - 常见问题: zh/reference/faq.md
+    - 演示:
+      - 在线演示: zh/demo/index.md
+
+plugins:
+  - search
+  - mkdocs-video
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - attr_list
+  - def_list
+  - pymdownx.highlight:
+      use_pygments: true
+  - pymdownx.superfences
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - tables
+  - footnotes

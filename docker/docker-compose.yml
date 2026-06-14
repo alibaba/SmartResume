@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  smartresume:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: smartresume-app
+    volumes:
+      - ../configs:/app/configs
+      - ../models:/app/models
+    ports:
+      - "4999:4999"
+    environment:
+      - PYTHONPATH=/app
+      - PYTHONUNBUFFERED=1
+      - SMARTRESUME_CONFIG=/app/configs/config.yaml
+    command: python demo/web_app.py
+    restart: unless-stopped

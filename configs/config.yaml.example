@@ -1,0 +1,80 @@
+# SmartResume - Resume parsing system configuration file example
+# Please copy this file to config.yaml and fill in your actual configuration
+
+# Model configuration
+model:
+  name: "qwen-turbo"
+  api_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+  api_key: "your-api-key-here"
+  max_tokens: 4096
+  temperature: 0
+  top_p: 1.0
+  seed: 0
+
+# Multi-channel configuration
+channels:
+  # Default channel (Alibaba Cloud Qwen)
+  default:
+    name: "qwen-turbo"
+    api_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    api_key: "your-api-key-here"
+    max_tokens: 4096
+    temperature: 0
+    top_p: 1.0
+    seed: 0
+
+  # Local vLLM model configuration
+  local_qwen:
+    name: "models/Qwen3-0.6B"
+    api_url: "http://localhost:8000/v1"
+    api_key: "local"
+    max_tokens: 2048
+    temperature: 0.1
+    top_p: 0.95
+    seed: 0
+
+# Extraction type channel configuration
+extract_channels:
+  basic_info: "local_qwen"
+  work_experience: "local_qwen"
+  education: "local_qwen"
+
+# Processing configuration
+processing:
+  # Force use OCR
+  use_force_ocr: false
+  
+  # Force JSON format
+  use_force_json: false
+  
+  # Use PDF raw text
+  use_pdf_raw_text: false
+  
+  remove_position_and_company_line: false
+
+# OCR configuration
+ocr:
+  # OCR service provider (default)
+  ocr_provider: "default"
+  
+  # Whether to use CUDA
+  use_cuda: true
+  
+  # Confidence threshold
+  confidence_threshold: 0.5
+
+# Layout detection configuration
+layout_detection:
+  enabled: true
+
+# Direct model configuration (no API or vLLM deployment needed)
+use_direct_models: true
+direct_model_name: "models/Qwen3-0.6B"
+
+# Model download configuration
+model_download:
+  source: "modelscope"  # modelscope
+  models_dir:
+    llm: "models"       # Path for LLM models
+    layout: "models"    # Path for layout detection models
+  auto_download: true   # Auto-download models if not found

@@ -1,0 +1,99 @@
+[tool.black]
+line-length = 100
+target-version = ["py39"]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "SmartResume"
+version = "2.0.0"
+license = { text = "Apache-2.0" }
+description = "Intelligent Resume Parsing System"
+readme = "README.md"
+requires-python = ">=3.9"
+keywords = ["resume", "parsing", "ocr", "llm", "pdf", "layout"]
+
+classifiers = [
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+
+dependencies = [
+    "numpy>=1.23",
+    "pillow>=9.5",
+    "opencv-python>=4.7",
+    "pdfplumber>=0.10.0",
+    "pyyaml>=6.0",
+    "tiktoken>=0.5.1",
+    "openai>=1.30.0",
+    "json-repair>=0.16.0",
+    "rapidocr-onnxruntime>=1.3.0",
+    "click>=8.0",
+    "loguru>=0.6",
+    "beautifulsoup4>=4.12",
+    "python-docx>=0.8",
+    "lxml>=4.9",
+    "requests>=2.25.0",
+    "onnxruntime>=1.17.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "black>=23.0",
+    "flake8>=6.0",
+    "mypy>=1.0",
+]
+local = [
+    "vllm>=0.2.0",
+    "torch>=2.0.0",
+    "transformers>=4.30.0",
+    "accelerate>=0.20.0",
+    "modelscope>=1.9.0",
+]
+docs = [
+    "sphinx>=5.0",
+    "sphinx-rtd-theme>=1.0",
+]
+gradio = [
+    "gradio>=5.34,<6",
+    "gradio-pdf>=0.0.22",
+]
+
+[tool.setuptools]
+package-dir = {"" = "."}
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["smartresume*", "scripts*"]
+
+[tool.setuptools.package-data]
+"smartresume" = ["data/word.txt", "utils/norm_table/*.csv"]
+
+[project.urls]
+Homepage = "https://github.com/alibaba/SmartResume"
+Repository = "https://github.com/alibaba/SmartResume"
+Documentation = "https://github.com/alibaba/SmartResume#readme"
+"Bug Tracker" = "https://github.com/alibaba/SmartResume/issues"
+
+[project.scripts]
+SmartResume = "scripts.start:main"
+SmartResume-cli = "scripts.start:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = "-v --tb=short"
+markers = [
+    "slow: marks tests that require heavy processing",
+    "requires_ocr: marks tests requiring RapidOCR initialization",
+]
+
