@@ -1,0 +1,51 @@
+model:
+  name: "qwen-turbo"
+  api_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+  api_key: ""
+  max_tokens: 8192
+  temperature: 0
+  top_p: 1.0
+  seed: 0
+
+channels:
+  local_qwen:
+    name: "models/Qwen3-0.6B"
+    api_url: "http://localhost:8001/v1"
+    api_key: "local"
+    max_tokens: 8192
+    temperature: 0.1
+    top_p: 0.95
+    seed: 0
+
+extract_channels:
+  basic_info: "local_qwen"
+  work_experience: "local_qwen"
+  education: "local_qwen"
+
+processing:
+  use_force_ocr: false
+  use_force_json: false
+  use_pdf_raw_text: false
+  remove_position_and_company_line: false
+
+ocr:
+  ocr_provider: "default"
+  use_cuda: true
+  confidence_threshold: 0.5
+
+# Layout detection configuration
+layout_detection:
+  enabled: true 
+
+# Direct model configuration (no API or vLLM deployment needed)
+use_direct_models: true
+direct_model_name: "models/Qwen3-0.6B"
+vllm_max_model_len: 32768
+
+# Model download configuration
+model_download:
+  source: "modelscope"
+  models_dir:
+    llm: "models"
+    layout: "models"
+  auto_download: true
