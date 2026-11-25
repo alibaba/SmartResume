@@ -9,7 +9,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.min.js"></script>
     <style>
         :root {
-            
+
             --primary-color: #6366f1;
             --primary-hover: #5b21b6;
             --primary-light: #e0e7ff;
@@ -30,7 +30,7 @@
             --gradient-primary: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
             --gradient-secondary: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
 
-            
+
             --header-height-mobile: 56px;
             --header-height-desktop: 64px;
             --content-padding-mobile: 12px;
@@ -77,7 +77,7 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        
+
         ::-webkit-scrollbar {
             width: 6px;
         }
@@ -93,7 +93,7 @@
         ::-webkit-scrollbar-thumb:hover {
             background: var(--text-secondary);
         }
-        
+
         .main-content {
             height: calc(100vh - var(--header-height-mobile));
             padding: var(--content-padding-mobile);
@@ -112,7 +112,7 @@
             }
         }
 
-        
+
         .panel-container {
             display: flex;
             flex-direction: column;
@@ -122,7 +122,7 @@
             border: 1px solid var(--border-color);
             overflow: hidden;
             transition: all 0.3s ease;
-            
+
             height: 50vh;
             min-height: 400px;
         }
@@ -140,7 +140,7 @@
             }
         }
 
-        
+
         @media (hover: none) {
             .panel-container:hover {
                 transform: none;
@@ -150,11 +150,11 @@
         .panel-content {
             flex: 1;
             overflow-y: auto;
-            overflow-x: hidden; 
-            min-height: 0; 
+            overflow-x: hidden;
+            min-height: 0;
         }
 
-        
+
         .drag-drop-zone {
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
@@ -195,7 +195,7 @@
             transform: translateY(-2px);
         }
 
-        
+
         .btn-primary {
             background: var(--gradient-primary);
             color: white;
@@ -248,12 +248,12 @@
             transform: scale(0.98);
         }
 
-        
+
         .form-input {
             border: 2px solid var(--border-color);
             border-radius: 8px;
             padding: 14px 16px;
-            font-size: 16px; 
+            font-size: 16px;
             transition: all 0.3s ease;
             background: white;
             color: var(--text-primary);
@@ -283,7 +283,7 @@
             box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
         }
 
-        
+
         .form-label {
             font-weight: 600;
             font-size: 14px;
@@ -301,7 +301,7 @@
             }
         }
 
-        
+
         .info-card {
             background: white;
             border: 1px solid var(--border-color);
@@ -326,7 +326,7 @@
             }
         }
 
-        
+
         @media (hover: none) {
             .info-card:hover {
                 transform: none;
@@ -334,7 +334,7 @@
             }
         }
 
-        
+
         .error-alert {
             background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
             border: 1px solid #fecaca;
@@ -346,7 +346,7 @@
             box-shadow: var(--shadow-sm);
         }
 
-        
+
         .success-alert {
             background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
             border: 1px solid #bbf7d0;
@@ -358,7 +358,7 @@
             box-shadow: var(--shadow-sm);
         }
 
-        
+
         .pdf-page-container {
             background: white;
             border-radius: 8px;
@@ -385,7 +385,7 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
-        
+
         @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
             .pdf-page-container canvas {
                 image-rendering: -webkit-optimize-contrast;
@@ -399,7 +399,7 @@
             }
         }
 
-        
+
         .text-preview-container pre {
             user-select: text;
             -webkit-user-select: text;
@@ -407,7 +407,7 @@
             -ms-user-select: text;
         }
 
-        
+
         .text-preview-container pre::-webkit-scrollbar {
             width: 8px;
         }
@@ -428,9 +428,9 @@
     </style>
 </head>
 <body>
-    
+
     <div class="h-screen flex flex-col">
-        
+
         <header class="px-4 py-2 md:px-6 md:py-3 bg-white border-b border-gray-200 shadow-sm z-10 relative">
             <div class="absolute inset-0 bg-gradient-to-r from-indigo-50 to-purple-50 opacity-50"></div>
             <div class="relative">
@@ -440,14 +440,14 @@
             </div>
         </header>
 
-        
+
         <main class="flex-1 main-content overflow-hidden">
-            
+
             <div class="h-full max-w-7xl mx-auto flex flex-col md:flex-row gap-4 md:gap-6 lg:gap-8">
 
-                
+
                 <div class="w-full md:w-1/2 panel-container">
-                    
+
                     <div class="px-4 py-2 md:px-5 md:py-3 bg-gradient-to-r from-slate-50 to-gray-50 border-b border-gray-200 flex-shrink-0">
                         <h2 class="text-sm md:text-base font-semibold text-gray-800 flex items-center">
                             <svg class="w-4 h-4 mr-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -458,7 +458,7 @@
                         </h2>
                     </div>
 
-                    
+
                     <div class="panel-content p-3 md:p-6 drag-drop-zone" id="file-preview-container">
                          <div class="flex justify-center items-center h-full text-center">
                             <div class="drag-hint max-w-xs md:max-w-sm">
@@ -483,7 +483,7 @@
                          </div>
                     </div>
 
-                    
+
                     <div class="p-4 md:p-4 border-t border-gray-200 flex-shrink-0 bg-gray-50">
                         <label for="file-upload" class="btn-primary w-full text-center cursor-pointer block">
                             <svg class="w-4 h-4 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -497,13 +497,13 @@
                     </div>
                 </div>
 
-                
+
                 <div class="w-full md:w-1/2 panel-container relative">
                     <div id="loading-indicator" class="loading-overlay hidden" aria-live="polite">
                         <div class="loader"></div>
                     </div>
 
-                    
+
                     <div class="px-4 py-2 md:px-5 md:py-3 bg-gradient-to-r from-emerald-50 to-teal-50 border-b border-gray-200 flex-shrink-0 flex justify-between items-center">
                         <h2 class="text-sm md:text-base font-semibold text-gray-800 flex items-center">
                             <svg class="w-4 h-4 mr-2 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -514,9 +514,9 @@
                         <div id="analysis-time" class="text-xs text-gray-500 font-medium hidden"></div>
                     </div>
 
-                    
+
                     <div id="resume-content-area" class="panel-content p-3 md:p-6">
-                        
+
                         <div id="info-placeholder" class="flex justify-center items-center h-full text-center">
                              <div class="max-w-xs md:max-w-sm">
                                 <div class="w-16 h-16 md:w-20 md:h-20 mx-auto mb-3 md:mb-4 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-full flex items-center justify-center">
@@ -534,12 +534,12 @@
                             </div>
                         </div>
 
-                        
+
                         <div id="error-display" class="hidden error-alert" role="alert"></div>
 
-                        
+
                         <div id="form-content" class="hidden space-y-4 md:space-y-8">
-                            
+
                             <div class="info-card">
                                 <div class="flex items-center mb-4 md:mb-6">
                                     <div class="w-6 h-6 md:w-8 md:h-8 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center mr-2 md:mr-3">
@@ -582,6 +582,10 @@
                                         <label class="form-label">当前所在地</label>
                                         <input type="text" id="currentLocation" class="form-input w-full">
                                     </div>
+                                    <div class="md:col-span-2">
+                                        <label for="jobIntention" class="form-label">求职意向</label>
+                                        <input type="text" id="jobIntention" class="form-input w-full">
+                                    </div>
                                     <div>
                                         <label class="form-label">籍贯</label>
                                         <input type="text" id="placeOfOrigin" class="form-input w-full">
@@ -589,7 +593,7 @@
                                 </div>
                             </div>
 
-                            
+
                             <div class="info-card">
                                 <div class="flex items-center mb-4 md:mb-6">
                                     <div class="w-6 h-6 md:w-8 md:h-8 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center mr-2 md:mr-3">
@@ -603,7 +607,7 @@
                                 <div id="education-experience" class="space-y-3 md:space-y-4"></div>
                             </div>
 
-                            
+
                             <div class="info-card">
                                 <div class="flex items-center mb-4 md:mb-6">
                                     <div class="w-6 h-6 md:w-8 md:h-8 bg-gradient-to-r from-purple-500 to-pink-600 rounded-lg flex items-center justify-center mr-2 md:mr-3">
@@ -615,8 +619,23 @@
                                 </div>
                                 <div id="work-experience" class="space-y-3 md:space-y-4"></div>
                             </div>
+<section class="info-card"><h3 class="text-lg md:text-xl font-semibold text-gray-800 mb-4">项目经历</h3><div id="project-experience" class="space-y-3 md:space-y-4"></div></section>
+<section class="info-card"><h3 class="text-lg md:text-xl font-semibold text-gray-800 mb-4">专业技能</h3><div id="professional-skills" class="space-y-3 md:space-y-4"></div></section>
+<section class="info-card"><h3 class="text-lg md:text-xl font-semibold text-gray-800 mb-4">个人优势</h3><div id="personal-strengths" class="space-y-3 md:space-y-4"></div></section>
+<section class="info-card"><h3 class="text-lg md:text-xl font-semibold text-gray-800 mb-4">论文与发表</h3><div id="publication-list" class="space-y-3 md:space-y-4"></div></section>
+<section class="info-card"><h3 class="text-lg md:text-xl font-semibold text-gray-800 mb-4">竞赛经历</h3><div id="competition-list" class="space-y-3 md:space-y-4"></div></section>
+<section class="info-card"><h3 class="text-lg md:text-xl font-semibold text-gray-800 mb-4">学术荣誉与奖励</h3><div id="honor-list" class="space-y-3 md:space-y-4"></div></section>
+<section class="info-card"><h3 class="text-lg md:text-xl font-semibold text-gray-800 mb-4">研究方向</h3><div id="research-direction-list" class="space-y-3 md:space-y-4"></div></section>
+<section class="info-card"><h3 class="text-lg md:text-xl font-semibold text-gray-800 mb-4">社会主页</h3><div id="social-profile-list" class="space-y-3 md:space-y-4"></div></section>
+                            <div id="extraction-warnings" class="hidden error-alert" role="status"></div>
+                            <details class="info-card">
+                                <summary class="font-semibold cursor-pointer">完整 JSON 解析结果</summary>
+                                <button type="button" id="download-json" class="btn-primary mt-3" onclick="downloadResumeJson()">下载解析 JSON</button>
+                                <pre id="json-result" class="mt-4 text-xs whitespace-pre-wrap break-words" style="overflow-wrap:anywhere"></pre>
+                            </details>
 
-                            
+
+
 
 
                         </div>
@@ -629,10 +648,10 @@
     <script>
 
         const API_ENDPOINT = 'analyze_resume_SmartResume';
-        const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB, must match server
+        const MAX_FILE_SIZE = 20 * 1024 * 1024;
 
         function escapeHtml(str) {
-            if (typeof str !== 'string') return str;
+            str = String(str ?? '');
             return str.replace(/&/g, '&amp;')
                       .replace(/</g, '&lt;')
                       .replace(/>/g, '&gt;')
@@ -641,7 +660,7 @@
         }
 
         function escapeAndBreak(str) {
-            if (typeof str !== 'string') return str;
+            str = String(str ?? '');
             return escapeHtml(str).replace(/\n/g, '<br>');
         }
 
@@ -662,6 +681,7 @@
                 desiredLocation: document.getElementById('desiredLocation'),
                 currentLocation: document.getElementById('currentLocation'),
                 placeOfOrigin: document.getElementById('placeOfOrigin'),
+                jobIntention: document.getElementById('jobIntention'),
             },
             educationExperience: document.getElementById('education-experience'),
             workExperience: document.getElementById('work-experience'),
@@ -677,13 +697,13 @@
 
 
 
-        
+
         function isFileTypeSupported(file) {
             const extension = file.name.split('.').pop().toLowerCase();
             return SUPPORTED_FILE_TYPES.includes(extension);
         }
 
-        
+
         async function handleDraggedFile(file) {
             if (!isFileTypeSupported(file)) {
                 showError(`不支持的文件类型: ${escapeHtml(file.name)}。请选择支持的格式：${SUPPORTED_FILE_TYPES.join(', ')}`);
@@ -731,7 +751,7 @@
             }
         }
 
-        
+
         function initializeDragAndDrop() {
             const dropZone = dom.filePreviewContainer;
 
@@ -771,19 +791,19 @@
                 const files = dt.files;
 
                 if (files.length > 0) {
-                    handleDraggedFile(files[0]); // 只处理第一个文件
+                    handleDraggedFile(files[0]);
                 }
             }
         }
 
 
 
-        
+
         function setLoading(isLoading) {
             dom.loadingIndicator.classList.toggle('hidden', !isLoading);
         }
 
-        
+
         function showError(message) {
             dom.errorDisplay.textContent = message;
             dom.errorDisplay.classList.remove('hidden');
@@ -792,7 +812,7 @@
             dom.analysisTime.classList.add('hidden');
         }
 
-        
+
         function resetUI() {
 
             dom.filePreviewContainer.innerHTML = `
@@ -831,7 +851,7 @@
 
 
 
-        
+
         async function handleFileUpload(input) {
             if (!input.files || input.files.length === 0) {
                 return;
@@ -842,9 +862,9 @@
             await handleDraggedFile(file);
         }
 
-        
+
         function displayFilePreview(file) {
-            dom.filePreviewContainer.innerHTML = ''; // 清空之前的预览
+            dom.filePreviewContainer.innerHTML = '';
 
 
             const loadingDiv = document.createElement('div');
@@ -958,7 +978,7 @@
                                 const baseScale = (containerWidth > 0 ? (containerWidth - 40) : 555) / viewport.width;
 
 
-                                const qualityScale = Math.min(devicePixelRatio * 2, 3); // 限制最大缩放避免性能问题
+                                const qualityScale = Math.min(devicePixelRatio * 2, 3);
                                 const renderScale = baseScale * qualityScale;
 
 
@@ -991,7 +1011,7 @@
                                 page.render({
                                     canvasContext: context,
                                     viewport: scaledViewport,
-                                    intent: 'display' // 优化显示质量
+                                    intent: 'display'
                                 });
                             });
                         }
@@ -1053,7 +1073,89 @@
             }
         }
 
-        
+
+
+        let lastResumeResult = null;
+        const extraSectionIds = {
+            publicationList: 'publication-list', competitionList: 'competition-list',
+            honorList: 'honor-list', researchDirectionList: 'research-direction-list',
+            socialProfileList: 'social-profile-list'
+        };
+        const taskLabels = {
+            basic_info: '个人信息', work_experience: '工作经历', education: '教育经历',
+            project_experience: '项目经历', skills_strengths: '技能与优势',
+            publication: '论文', competition: '竞赛', honor: '荣誉',
+            research_direction: '研究方向', social_profile: '社会主页'
+        };
+        const detailLabels = {
+            publicationList: {title: '论文标题', conferenceName: '会议 / 期刊', publicationYear: '发表年份', publicationLevel: '论文级别', status: '发表状态', candidateAuthorRole: '作者身份', citationCount: '引用次数', url: '链接'},
+            competitionList: {experience: '竞赛经历', level: '奖项 / 级别', competitionDate: '竞赛日期'},
+            honorList: {name: '荣誉名称', issuer: '颁发机构', level: '荣誉级别', awardDate: '获奖日期', description: '说明'},
+            researchDirectionList: {name: '研究方向', description: '研究内容'},
+            socialProfileList: {type: '平台', url: '主页地址', account: '账号'}
+        };
+        function displayValue(value) {
+            if (value == null) return '';
+            if (Array.isArray(value)) return value.map(displayValue).filter(Boolean).join('、');
+            if (typeof value === 'object') return JSON.stringify(value);
+            return String(value);
+        }
+        function appendDetails(container, item, labels) {
+            const dl = document.createElement('dl');
+            dl.className = 'mt-3 space-y-2 text-sm';
+            for (const [key, label] of Object.entries(labels)) {
+                const value = displayValue(item[key]);
+                if (!value) continue;
+                const row = document.createElement('div');
+                const dt = document.createElement('dt');
+                dt.className = 'text-gray-500 text-xs';
+                dt.textContent = label;
+                const dd = document.createElement('dd');
+                dd.className = 'text-gray-800 whitespace-pre-wrap break-words';
+                dd.style.overflowWrap = 'anywhere';
+                if (key === 'url' && /^https?:\/\//i.test(value)) {
+                    try {
+                        const url = new URL(value);
+                        const a = document.createElement('a');
+                        a.href = url.href;
+                        a.textContent = value;
+                        a.target = '_blank';
+                        a.rel = 'noopener noreferrer';
+                        a.className = 'text-indigo-600 underline';
+                        dd.appendChild(a);
+                    } catch (_) { dd.textContent = value; }
+                } else { dd.textContent = value; }
+                row.append(dt, dd);
+                dl.appendChild(row);
+            }
+            container.appendChild(dl);
+        }
+        function createDetailCard(item, labels) {
+            const card = document.createElement('article');
+            card.className = 'bg-slate-50 border border-gray-200 p-3 md:p-5 rounded-lg';
+            appendDetails(card, item, labels);
+            return card;
+        }
+        function renderTextSection(id, value) {
+            const container = document.getElementById(id);
+            container.replaceChildren();
+            const p = document.createElement('p');
+            p.className = 'text-sm text-gray-700 whitespace-pre-wrap break-words';
+            p.textContent = displayValue(value) || '暂无相关信息';
+            container.appendChild(p);
+        }
+        function downloadResumeJson() {
+            if (!lastResumeResult) return;
+            const url = URL.createObjectURL(new Blob([JSON.stringify(lastResumeResult, null, 2)], {type: 'application/json;charset=utf-8'}));
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'resume_parsed.json';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+
         function updateForm(data) {
             dom.infoPlaceholder.classList.add('hidden');
             dom.formContent.classList.remove('hidden');
@@ -1068,6 +1170,7 @@
             dom.basicInfo.born.value = info.born || '';
             dom.basicInfo.currentLocation.value = info.currentLocation || '';
             dom.basicInfo.placeOfOrigin.value = info.placeOfOrigin || '';
+            dom.basicInfo.jobIntention.value = info.jobIntention || '';
             dom.basicInfo.desiredLocation.value = Array.isArray(info.desiredLocation)
                 ? info.desiredLocation.join(', ')
                 : (info.desiredLocation || '');
@@ -1075,15 +1178,28 @@
 
             renderExperienceSection(dom.educationExperience, data.education, createEducationCard);
             renderExperienceSection(dom.workExperience, data.workExperience, createWorkCard);
-            
+            renderExperienceSection(document.getElementById('project-experience'), data.projectExperience, createProjectCard);
+            renderTextSection('professional-skills', data.professionalSkills);
+            renderTextSection('personal-strengths', data.personalStrengths);
+            for (const [key, id] of Object.entries(extraSectionIds)) {
+                renderExperienceSection(document.getElementById(id), data[key], item => createDetailCard(item, detailLabels[key]));
+            }
+            const warningBox = document.getElementById('extraction-warnings');
+            const errors = Array.isArray(data.extractionErrors) ? data.extractionErrors : [];
+            warningBox.classList.toggle('hidden', errors.length === 0);
+            warningBox.textContent = errors.length ? '部分条目解析失败，请重试：' + errors.map(error => taskLabels[error.task] || error.task).join('、') : '';
+            lastResumeResult = data;
+            document.getElementById('json-result').textContent = JSON.stringify(data, null, 2);
+
+
 
         }
 
-        
+
         function renderExperienceSection(container, items, cardCreator) {
             container.innerHTML = '';
-            if (items && items.length > 0) {
-                items.forEach(item => {
+            if (Array.isArray(items) && items.length > 0) {
+                items.filter(item => item && typeof item === "object").forEach(item => {
                     container.appendChild(cardCreator(item));
                 });
             } else {
@@ -1099,7 +1215,7 @@
             }
         }
 
-        
+
         function renderSkillsAndStrengths(container, data, cardCreator) {
             container.innerHTML = '';
             if (data && data.description) {
@@ -1123,7 +1239,7 @@
             div.className = 'bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 p-3 md:p-5 rounded-lg md:rounded-xl transition-all duration-300 md:hover:shadow-md md:hover:scale-105';
             const period = edu.period || {};
             const time = (period.startDate && period.endDate) ? `${period.startDate} - ${period.endDate}` : '时间不详';
-            
+
 
             const degreeInfo = [];
             if (edu.degreeLevel) degreeInfo.push(escapeHtml(edu.degreeLevel));
@@ -1151,6 +1267,10 @@
                     ${educationDescription}
                 </div>
             `;
+            appendDetails(div, edu, {
+                gpa: 'GPA / 成绩', advisorList: '导师', labName: '实验室',
+                expectedGraduationDate: '预计毕业时间'
+            });
             return div;
         }
 
@@ -1240,7 +1360,7 @@
 
 
 
-        
+
         document.addEventListener('DOMContentLoaded', function() {
             initializeDragAndDrop();
         });

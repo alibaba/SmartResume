@@ -1,46 +1,20 @@
 # 输出格式
 
-## JSON 格式
+结果为 JSON。默认十类抽取任务对应以下十一个业务根字段：
 
-```json
-{
-  "resume_id": "resume_001",
-  "basic_info": {
-    "name": "张三",
-    "phone": "13800138000",
-    "email": "zhangsan@example.com"
-  },
-  "work_experience": [
-    {
-      "company": "ABC公司",
-      "position": "软件工程师",
-      "duration": "2020-2023"
-    }
-  ]
-}
-```
+| 任务 | JSON 根字段 |
+| --- | --- |
+| basic_info | basicInfo |
+| work_experience | workExperience |
+| project_experience | projectExperience |
+| education | education |
+| skills_strengths | professionalSkills, personalStrengths |
+| publication | publicationList |
+| competition | competitionList |
+| honor | honorList |
+| research_direction | researchDirectionList |
+| social_profile | socialProfileList |
 
-## CSV 格式
+教育经历支持 degreeLevel、period、school、department、major、advisorList、labName、expectedGraduationDate、gpa 和 educationDescription。描述类字段会将模型返回的文本索引还原成原文；信息缺失时保留对应的空字符串或空数组。
 
-```csv
-resume_id,name,phone,email,company,position
-resume_001,张三,13800138000,zhangsan@example.com,ABC公司,软件工程师
-```
-
-## XML 格式
-
-```xml
-<resume id="resume_001">
-  <basic_info>
-    <name>张三</name>
-    <phone>13800138000</phone>
-    <email>zhangsan@example.com</email>
-  </basic_info>
-</resume>
-```
-
-## 下一步
-
-- [查看基准测试](benchmark.md)
-- [了解常见问题](faq.md)
-
+结果还可包含 rawText 等处理信息；发生失败时检查 error 或 extractionErrors。业务字段和错误处理应按真实返回结果读取，不要把日志文本当成 JSON。使用[Python API](../usage/api.md)可保存完整 JSON 文件。

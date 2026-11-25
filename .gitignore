@@ -26,7 +26,6 @@ Thumbs.db
 
 # Project specific
 models/
-tests/
 *.log
 logs/
 
@@ -36,3 +35,7 @@ configs/config.yaml
 # Temp files
 .pytest_cache/
 .mypy_cache/
+
+# Local evaluation archives and notebook autosaves
+/temp/
+.ipynb_checkpoints/

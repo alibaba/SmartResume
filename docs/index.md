@@ -1,26 +1,20 @@
-# SmartResume - 智能简历解析系统
+# SmartResume
 
-欢迎使用 SmartResume！
-
-## 快速导航
+Layout-aware resume parsing with structured JSON output.
 
 - [中文文档](zh/index.md)
-- [English Documentation](en/index.md)
+- [English documentation](en/index.md)
+- [CPU/GPU installation](runtime-installation.md)
+- [Configuration](configuration.md)
+- [Local models](local-models.md)
+- [PDF processing](pdf-processing.md)
 
-## 项目介绍
+## Implementation modules
 
-SmartResume 是一个面向版面结构的智能简历解析系统。
+| Module | Responsibility |
+| --- | --- |
+| smartresume/utils/extraction_schema.py | Share task names, JSON roots and missing-field defaults across CLI, Web and parsing |
+| smartresume/utils/onnx_runtime.py | Select providers and initialize CUDA libraries for OCR/layout |
+| smartresume/data/file_processor.py | Process resume files and aggregate repeated PDF font warnings |
 
-## 快速开始
-
-1. [查看环境要求](zh/quick_start/requirements.md)
-2. [安装指南](zh/quick_start/installation.md)
-3. [基本使用](zh/usage/index.md)
-
-## 更多信息
-
-- [配置说明](configuration.md)
-- [本地模型部署](local-models.md)
-- [基准测试结果](benchmark-results-zh.md)
-- [常见问题](FAQ.md)
-
+Runtime weights belong in models; experimental outputs, historical scripts and verification records belong in temp. They are not part of the published user guide.

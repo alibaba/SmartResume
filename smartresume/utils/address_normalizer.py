@@ -1,14 +1,9 @@
-"""
-Address normalizer module.
-Normalizes Chinese address strings to standard name_path/code_path using a city code CSV.
-"""
 import csv
 import os
 from typing import Optional
 
 
 class AddressNormalizer:
-    """Normalize address strings using a city code tree (CSV)."""
 
     class Node:
         def __init__(
@@ -34,17 +29,12 @@ class AddressNormalizer:
             child.parent = self
 
     def __init__(self, csv_file: str) -> None:
-        """
-        Initialize normalizer with a city code CSV.
 
-        Args:
-            csv_file: Path to CSV with columns: code, parent_code, name, code_path, name_path
-        """
         self.tree = self.build_tree(csv_file)
         self.all_nodes = list(self.tree.values())
 
     def create_aliases(self, name: str) -> set:
-        """Create aliases by stripping common suffixes (市, 县, 省, etc.)."""
+
         aliases = set()
         suffixes = ["市", "县", "省", "自治区", "区", "自治州"]
         for suffix in suffixes:
@@ -55,7 +45,7 @@ class AddressNormalizer:
         return aliases
 
     def build_tree(self, csv_file: str) -> dict:
-        """Build tree from CSV. CSV must have: code, parent_code, name, code_path, name_path."""
+
         tree: dict = {}
         with open(csv_file, "r", encoding="utf-8") as f:
             reader = csv.DictReader(f)
@@ -103,19 +93,13 @@ class AddressNormalizer:
         return tree
 
     def get_leaf_nodes(self) -> list:
-        """Return nodes that have no children."""
+
         return [node for node in self.tree.values() if not node.children]
 
-    def norm_address(self, address: Optional[str]) -> Optional["AddressNormalizer.Node"]:
-        """
-        Normalize an address string to the best matching node.
+    def norm_address(
+        self, address: Optional[str]
+    ) -> Optional["AddressNormalizer.Node"]:
 
-        Args:
-            address: Raw address string (e.g. "海淀", "南山区", "河南信阳")
-
-        Returns:
-            Node with name_path/code_path, or None if no match. Node.name may be None for no match.
-        """
         if not address or not str(address).strip():
             return None
 
@@ -130,7 +114,10 @@ class AddressNormalizer:
         matches.sort(key=lambda x: (x.weight, len(x.name or "")), reverse=True)
         if len(matches) > 1:
             both_have_paths = matches[0].code_path and matches[1].code_path
-            is_child = both_have_paths and matches[0].code_path in matches[1].code_path
+            is_child = (
+                both_have_paths
+                and matches[0].code_path in matches[1].code_path
+            )
             depth_0 = len(matches[0].code_path.split("/"))
             depth_1 = len(matches[1].code_path.split("/"))
             child_deeper = depth_1 > depth_0
@@ -148,14 +135,16 @@ class AddressNormalizer:
         return match_res if match_res.code_path else None
 
     def print_tree(self) -> None:
-        """Print tree structure (for debugging)."""
+
         roots = [node for node in self.tree.values() if node.parent is None]
         for root in roots:
             self._print_node(root, level=0)
 
     def _print_node(self, node: "AddressNormalizer.Node", level: int) -> None:
         indent = " " * (level * 4)
-        aliases = ", ".join(a for a in (node.aliases or set()) if a != node.name)
+        aliases = ", ".join(
+            a for a in (node.aliases or set()) if a != node.name
+        )
         if aliases:
             print(f"{indent}{node.name} (别名: {aliases}) {node.weight}")
         else:
@@ -165,21 +154,15 @@ class AddressNormalizer:
 
 
 def get_default_csv_path() -> str:
-    """Return default path to city_code.csv under this package."""
+
     current_dir = os.path.dirname(os.path.abspath(__file__))
     return os.path.join(current_dir, "norm_table", "city_code.csv")
 
 
-def create_normalizer(csv_file: Optional[str] = None) -> Optional[AddressNormalizer]:
-    """
-    Create an AddressNormalizer instance.
+def create_normalizer(
+    csv_file: Optional[str] = None,
+) -> Optional[AddressNormalizer]:
 
-    Args:
-        csv_file: Path to city code CSV. If None, uses package default norm_table/city_code.csv.
-
-    Returns:
-        AddressNormalizer if CSV exists, else None.
-    """
     path = csv_file or get_default_csv_path()
     if not os.path.exists(path):
         return None
@@ -189,17 +172,15 @@ def create_normalizer(csv_file: Optional[str] = None) -> Optional[AddressNormali
         return None
 
 
-# Default instance (lazy, uses package norm_table if present)
 _default_normalizer: Optional[AddressNormalizer] = None
 
 
 def get_default_normalizer() -> Optional[AddressNormalizer]:
-    """Return or create the default AddressNormalizer (lazy, once)."""
+
     global _default_normalizer
     if _default_normalizer is None:
         _default_normalizer = create_normalizer()
     return _default_normalizer
 
 
-# Module-level instance for compatibility (e.g. formatter). None if CSV not found.
 normalizer = get_default_normalizer()

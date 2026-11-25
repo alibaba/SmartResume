@@ -1,0 +1,14 @@
+.git/
+temp/
+models/
+configs/config.yaml
+**/__pycache__/
+**/*.pyc
+**/*.egg-info/
+.venv/
+venv/
+build/
+dist/
+logs/
+*.log
+.DS_Store

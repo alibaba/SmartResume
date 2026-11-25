@@ -1,65 +1,45 @@
-# Configuration Overview
+# Configuration
 
-SmartResume reads all runtime options from `configs/config.yaml`. The file shipped with the repository can be used as a starting point:
+Create configs/config.yaml from configs/config.yaml.example only for a new installation. Preserve an existing model path/API configuration. SMARTRESUME_CONFIG can select another configuration file.
 
-```yaml
-model:
-  name: "qwen-turbo"
-  api_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
-  api_key: ""
-  max_tokens: 4096
-  temperature: 0
-  top_p: 1.0
-  seed: 0
+## OCR and layout device
 
-channels:
-  local_qwen:
-    name: "models/Qwen3-0.6B"
-    api_url: "http://localhost:8001/v1"
-    api_key: "local"
-
-extract_channels:
-  basic_info: "local_qwen"
-  work_experience: "local_qwen"
-  education: "local_qwen"
-
-processing:
-  use_force_ocr: false
-  use_force_json: false
-  use_pdf_raw_text: false
-  remove_position_and_company_line: false
-
+~~~yaml
 ocr:
-  ocr_provider: "default"
-  use_cuda: true
+  ocr_provider: default
+  device: auto
   confidence_threshold: 0.5
-
 layout_detection:
   enabled: true
+~~~
 
+Both OCR and layout use the same ONNX policy. Priority is SMARTRESUME_ONNX_DEVICE > ocr.device > legacy ocr.use_cuda > auto.
+
+- auto prefers an available working GPU and permits CPU fallback.
+- cuda requires CUDA and reports initialization errors instead of silently claiming GPU use.
+- cpu requests CPU even if a GPU runtime is installed.
+- Legacy use_cuda: true/false remains supported when device is omitted, mapping to cuda/cpu.
+
+This policy does not select the LLM device. See [runtime installation](runtime-installation.md).
+
+## Extraction tasks
+
+CLI defaults to all ten tasks. EXTRACT_TYPES in smartresume/utils/extraction_schema.py is the shared task list. For an external API, channel mappings may be configured for all task names: basic_info, work_experience, project_experience, education, skills_strengths, publication, competition, honor, research_direction, social_profile.
+
+## Model settings
+
+For an existing local checkpoint:
+
+~~~yaml
 use_direct_models: true
-direct_model_name: "models/Qwen3-0.6B"
+direct_model_name: models/Qwen3-0.6B-v2
+~~~
 
-model_download:
-  source: "modelscope"
-  models_dir:
-    llm: "models"
-    layout: "models"
-  auto_download: true
-```
+For a remote model set use_direct_models: false and configure model.api_url, model.api_key and model.name. Keep credentials out of version control. Full required settings are provided by configs/config.yaml.example; the snippets here are partial examples, not replacement configuration files.
 
-- Leave `channels` / `extract_channels` empty if you only rely on the remote API defined in `model`.
-- Set `use_direct_models: true` with a valid `direct_model_name` to load a local Transformers model before falling back to HTTP channels.
-
-After editing the file you can validate it via:
-
-```python
+~~~python
 from smartresume.utils.config import Config
 Config.from_yaml("configs/config.yaml")
-```
+~~~
 
-Next steps:
-
-- [Local model deployment](local-models.md)
-- [Command-line usage (Chinese)](zh/usage/cli.md)
-- [Python API guide (Chinese)](zh/usage/api.md)
+Invalid configuration raises an error at startup. Restart the process after changing the configuration or environment; existing model sessions are cached.

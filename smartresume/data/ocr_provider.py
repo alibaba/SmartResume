@@ -1,102 +1,94 @@
-"""
-OCR provider manager
-Select OCR implementations based on configuration.
-Uses RapidOCR (Apache-2.0) by default.
-"""
+from pathlib import Path
+from typing import Any, List, Optional
+
 import numpy as np
-from typing import List, Any, Optional
+
+from smartresume.utils.onnx_runtime import (
+    get_onnx_providers,
+    onnx_device,
+    verify_onnx_session,
+)
 
 
 class OCRProviderManager:
-    """OCR provider manager (RapidOCR)."""
-
     def __init__(self) -> None:
         self._engine: Optional[Any] = None
 
     def get_ocr_provider(self) -> Any:
-        """Get OCR provider based on configuration."""
         return self._get_rapid_ocr_provider()
 
     def _get_rapid_ocr_provider(self) -> Any:
-        """Get RapidOCR engine."""
         if self._engine is None:
-            try:
-                from rapidocr_onnxruntime import RapidOCR
-                self._engine = RapidOCR()
-            except Exception:
-                raise
+            from rapidocr import RapidOCR
+
+            providers = get_onnx_providers()
+            params = {
+                "EngineConfig.onnxruntime.intra_op_num_threads": 4,
+                "EngineConfig.onnxruntime.inter_op_num_threads": 1,
+                "EngineConfig.onnxruntime.use_cuda": "CUDAExecutionProvider"
+                in providers,
+            }
+            model_dir = (
+                Path(__file__).resolve().parents[2] / "models" / "rapidocr"
+            )
+            model_files = {
+                "Det": "ch_PP-OCRv4_det_infer.onnx",
+                "Cls": "ch_ppocr_mobile_v2.0_cls_infer.onnx",
+                "Rec": "ch_PP-OCRv4_rec_infer.onnx",
+            }
+            for stage, filename in model_files.items():
+                model_path = model_dir / filename
+                if model_path.is_file():
+                    params[f"{stage}.model_path"] = str(model_path)
+            engine = RapidOCR(params=params)
+            sessions = {
+                "detection": engine.text_det.session.session,
+                "classification": engine.text_cls.session.session,
+                "recognition": engine.text_rec.session.session,
+            }
+            for name, session in sessions.items():
+                actual = verify_onnx_session(session, providers, "OCR " + name)
+                print(f"OCR {name} providers: {actual}")
+            self._engine = engine
         return self._engine
 
     def ocr_extract(self, image: np.ndarray) -> List[Any]:
-        """
-        Perform OCR on image.
-
-        Args:
-            image: Image array (BGR or RGB, numpy ndarray)
-
-        Returns:
-            List: [[[bbox], [text, confidence]], ...]
-        """
         return self._ocr_with_rapid_ocr(image)
 
     def _ocr_with_rapid_ocr(self, image: np.ndarray) -> List[Any]:
-        """Run OCR using RapidOCR."""
         try:
-            engine = self._get_rapid_ocr_provider()
-            # RapidOCR accepts path, bytes, or ndarray (BGR)
-            result, _ = engine(image)
-            if result is None or not result:
+            result = self._get_rapid_ocr_provider()(image)
+            if result is None or result.boxes is None or not result.txts:
                 return []
-
             formatted_result = []
-            for item in result:
-                # RapidOCR item: [box, text, score]; box is list of 4 points [[x,y],...]
-                box = item[0]
-                text = item[1] if len(item) > 1 else ""
-                score = float(item[2]) if len(item) > 2 else 0.0
+            for box, text, score in zip(
+                result.boxes, result.txts, result.scores
+            ):
                 if isinstance(box, np.ndarray):
                     box = box.tolist()
-                formatted_result.append([
-                    [box],
-                    [text, score]
-                ])
+                formatted_result.append([[box], [text, float(score)]])
             return formatted_result
-
         except Exception:
+            if onnx_device() == "cuda":
+                raise
             return []
 
     def extract_text_from_file(self, file_path: str) -> str:
-        """
-        Extract text from a file (for document files).
-
-        Args:
-            file_path: File path
-
-        Returns:
-            Extracted text
-        """
         return ""
 
     def ocr(self, image_data: bytes) -> List[Any]:
-        """
-        Perform OCR on image data (bytes).
-
-        Args:
-            image_data: Image data as bytes
-
-        Returns:
-            List: [[[bbox], [text, confidence]], ...]
-        """
         try:
             import cv2
+
             nparr = np.frombuffer(image_data, np.uint8)
             image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
             if image is None:
                 return []
             return self._ocr_with_rapid_ocr(image)
         except Exception:
+            if onnx_device() == "cuda":
+                raise
             return []
 
 
-# Create global instance
 ocr_provider_manager = OCRProviderManager()

@@ -5,17 +5,17 @@ from .data import TextExtractor, OCRProviderManager, LayoutDetector
 from .utils import config, get_prompts, address_normalizer
 
 __all__ = [
-    'ResumeAnalyzer',
-    'create_analyzer',
-    'LLMClient',
-    'DataProcessor',
-    'FileProcessor',
-    'TextExtractor',
-    'OCRProviderManager',
-    'LayoutDetector',
-    'config',
-    'get_prompts',
-    'address_normalizer',
+    "ResumeAnalyzer",
+    "create_analyzer",
+    "LLMClient",
+    "DataProcessor",
+    "FileProcessor",
+    "TextExtractor",
+    "OCRProviderManager",
+    "LayoutDetector",
+    "config",
+    "get_prompts",
+    "address_normalizer",
 ]
 
 __version__ = "2.0.0"

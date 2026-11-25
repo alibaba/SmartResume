@@ -1,7 +1,3 @@
-"""
-Utilities module for common functionality
-"""
-
 from .config import config, Config
 from .prompts import get_prompts
 from .address_normalizer import (
@@ -13,12 +9,12 @@ from .address_normalizer import (
 )
 
 __all__ = [
-    'config',
-    'Config',
-    'get_prompts',
-    'AddressNormalizer',
-    'create_normalizer',
-    'get_default_normalizer',
-    'get_default_csv_path',
-    'address_normalizer',
+    "config",
+    "Config",
+    "get_prompts",
+    "AddressNormalizer",
+    "create_normalizer",
+    "get_default_normalizer",
+    "get_default_csv_path",
+    "address_normalizer",
 ]

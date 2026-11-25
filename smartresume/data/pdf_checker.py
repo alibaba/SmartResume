@@ -1,9 +1,3 @@
-#!/usr/bin/env python3
-"""
-PDF abnormal detection module.
-Detects Producer duplication, iText fingerprint, etc. Returns (is_abnormal, issues).
-Uses pdfplumber for metadata (no PyMuPDF dependency).
-"""
 from typing import Dict, List, Any, Tuple, Optional
 
 try:
@@ -13,18 +7,11 @@ except ImportError:
 
 
 class PDFChecker:
-    """PDF abnormal checker."""
 
-    def check_pdf_abnormal(self, pdf_path: str) -> Tuple[bool, List[Dict[str, Any]]]:
-        """
-        Check whether the PDF is abnormal (e.g. Producer duplication, iText fingerprint).
+    def check_pdf_abnormal(
+        self, pdf_path: str
+    ) -> Tuple[bool, List[Dict[str, Any]]]:
 
-        Args:
-            pdf_path: Path to the PDF file.
-
-        Returns:
-            Tuple[bool, List[Dict]]: (is_abnormal, list of issues).
-        """
         issues: List[Dict[str, Any]] = []
 
         if not pdf_path or not pdfplumber:
@@ -33,32 +20,71 @@ class PDFChecker:
         try:
             with pdfplumber.open(pdf_path) as pdf:
                 metadata = getattr(pdf, "metadata", None) or {}
-            # PDF metadata keys may be with or without leading slash
-            producer = metadata.get("Producer") or metadata.get("/Producer") or ""
-            if isinstance(producer, bytes):
-                producer = producer.decode("utf-8", errors="ignore")
-            else:
-                producer = str(producer or "")
 
-            is_producer_abnormal, producer_issue = self._check_producer_abnormal(producer)
+            def metadata_text(name):
+                value = (
+                    metadata.get(name)
+                    or metadata.get("/" + name)
+                    or metadata.get(name.lower())
+                    or ""
+                )
+                return (
+                    value.decode("utf-8", errors="replace")
+                    if isinstance(value, bytes)
+                    else str(value)
+                )
+
+            producer = metadata_text("Producer")
+            creator = metadata_text("Creator")
+            abnormal_design, design_issue = self._check_design_tool_abnormal(
+                producer, creator
+            )
+            if abnormal_design:
+                issues.append(
+                    {
+                        "type": "设计工具PDF异常",
+                        "description": design_issue,
+                        "severity": "高",
+                    }
+                )
+
+            is_producer_abnormal, producer_issue = (
+                self._check_producer_abnormal(producer)
+            )
             if is_producer_abnormal and producer_issue:
-                issues.append({
-                    "type": "Producer异常",
-                    "description": producer_issue,
-                    "severity": "中",
-                })
+                issues.append(
+                    {
+                        "type": "Producer异常",
+                        "description": producer_issue,
+                        "severity": "中",
+                    }
+                )
         except Exception:
             pass
 
         return len(issues) > 0, issues
 
-    def _check_producer_abnormal(self, producer: Optional[str]) -> Tuple[bool, Optional[str]]:
-        """
-        Check Producer metadata for duplication / iText fingerprint.
+    @staticmethod
+    def _check_design_tool_abnormal(
+        producer: Optional[str], creator: Optional[str]
+    ):
 
-        Returns:
-            Tuple[bool, Optional[str]]: (is_abnormal, description).
-        """
+        metadata = f"{producer or ''} {creator or ''}".casefold()
+        tools = ("Canva", "CorelDRAW", "Corel PDF Engine", "Adobe Illustrator")
+        matched = [tool for tool in tools if tool.casefold() in metadata]
+        if matched:
+            return (
+                True,
+                "Design-tool export with potentially "
+                "unreliable native geometry: "
+                + ", ".join(matched),
+            )
+        return False, None
+
+    def _check_producer_abnormal(
+        self, producer: Optional[str]
+    ) -> Tuple[bool, Optional[str]]:
+
         if not producer:
             return False, None
 

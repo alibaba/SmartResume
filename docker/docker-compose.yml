@@ -1,4 +1,3 @@
-version: '3.8'
 
 services:
   smartresume:
@@ -14,6 +13,14 @@ services:
     environment:
       - PYTHONPATH=/app
       - PYTHONUNBUFFERED=1
+      - SMARTRESUME_ONNX_DEVICE=cuda
       - SMARTRESUME_CONFIG=/app/configs/config.yaml
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
     command: python demo/web_app.py
     restart: unless-stopped

@@ -1,55 +1,32 @@
-# Local Model Deployment
+# Local model deployment
 
-SmartResume supports local model inference via vLLM (in-process) or Transformers, with no separate API server required.
+`pip install -e .` includes GPU inference, local-model and Web dependencies. See the [runtime guide](runtime-installation.md) for existing environments and CPU execution. The default backend is Transformers. If vLLM is separately installed, it is attempted first. Both run in-process; a separate HTTP model server is optional.
 
-## Quick Setup
+The default extraction checkpoint is `Qwen3-0.6B-v2` from the ModelScope repository `Alibaba-EI/SmartResume`. To switch an existing installation, download v2 and update `direct_model_name` in your active configuration. If you serve v2 through the local HTTP channel, set `channels.local_qwen.name` to the name advertised by the server.
 
-1. Install dependencies and download the resume model:
-   ```bash
-   pip install "SmartResume[local]"
-   python scripts/download_models.py
-   ```
+~~~bash
+python scripts/download_models.py
+~~~
 
-2. Enable direct model loading in `configs/config.yaml`:
-   ```yaml
-   use_direct_models: true
-   direct_model_name: "models/Qwen3-0.6B"
-   ```
+Configure the checkpoint path and OCR/layout policy:
 
-3. Run the parser as usual:
-   ```bash
-   python scripts/start.py --file resume.pdf
-   ```
+~~~yaml
+use_direct_models: true
+direct_model_name: models/Qwen3-0.6B-v2
+ocr:
+  device: auto
+~~~
 
-When `use_direct_models` is true, SmartResume loads the model in-process using vLLM (preferred) or Transformers as a fallback. No separate vLLM API server is needed.
+Parse all ten task families:
 
-## Python API example
+~~~bash
+python scripts/start.py --file resume.pdf \
+  --extract_types basic_info work_experience project_experience education \
+  skills_strengths publication competition honor research_direction social_profile
+~~~
 
-```python
-from smartresume import ResumeAnalyzer
+For a separately managed OpenAI-compatible model server, set use_direct_models to false and configure model or channels as described in [configuration](configuration.md).
 
-analyzer = ResumeAnalyzer(init_ocr=True, init_llm=True)
-result = analyzer.pipeline(
-    cv_path="resume.pdf",
-    resume_id="resume_001",
-    extract_types=["basic_info", "work_experience", "education"],
-)
-```
+The default installation includes PyTorch, ONNX Runtime GPU, RapidOCR, Transformers, Accelerate, ModelScope and Flask. vLLM remains optional and has separate hardware and package requirements. After adding or changing dependencies, use the ONNX Runtime cleanup commands in the [installation guide](runtime-installation.md) if conflicting packages are introduced.
 
-The behavior is driven by the YAML configuration — no extra arguments are required.
-
-## Hardware Requirements
-
-| Component | Minimum | Recommended |
-|-----------|---------|-------------|
-| **GPU** | NVIDIA GTX 1060 (6GB) | RTX 3080+ (10GB+) |
-| **RAM** | 16GB | 32GB+ |
-| **Storage** | 20GB free | 50GB+ SSD |
-
-Software: Python 3.9+, CUDA 11.8+ (for GPU inference).
-
-## Troubleshooting
-
-1. **Out of memory**: Lower `vllm_gpu_memory_utilization` in config or use quantization.
-2. **Model load failure**: Check that `direct_model_name` points to a valid directory; delete cache and re-download if needed.
-3. **Slow inference**: Lower `max_tokens` or temperature in config.
+OCR/layout device selection and the local LLM device are separate. Setting SMARTRESUME_ONNX_DEVICE=cpu alone does not hide CUDA from Transformers.
